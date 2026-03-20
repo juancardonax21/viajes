@@ -265,7 +265,7 @@ let addingEv=false,addingBu=false,addingCk=false;
 let newEv={day:"",time:"09:00",title:"",cat:"activity",location:"",note:"",cost:"",url:""};
 let newBu={cat:"flights",desc:"",usd:"",cancel:"",url:""};
 let newCk={group:"",text:"",url:""};
-let showWiz=false,wizStep=1;
+let showWiz=false,showSync=false,wizStep=1;
 let wizData={name:"",destination:"",startDate:"",endDate:"",travelers:"",exchangeRate:"1.08"};
 
 function getTrip(){return allTrips.find(t=>t.id===activeId)||allTrips[0];}
@@ -391,7 +391,6 @@ function render(){
   if(activeTab==="budget") html+=renderBudget(byBCat,totalUSD,totalEUR,trip);
   if(activeTab==="checklist") html+=renderChecklist(ckDone,trip.checklist.length,pct,ckGroups,trip);
   if(showWiz) html+=renderWizard();
-  if(showSync) html+=renderSyncModal();
 
   document.getElementById("app").innerHTML=html;
 }
