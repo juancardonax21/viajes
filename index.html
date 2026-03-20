@@ -259,7 +259,9 @@ function nn(ci,co){try{return Math.round((new Date(co+"T00:00:00")-new Date(ci+"
 function toast(msg,dur){var el=document.getElementById("toast");el.textContent=msg;el.className="toast show";setTimeout(function(){el.className="toast";},dur||2800);}
 function mkEv(){return {day:selDay,time:"09:00",title:"",cat:"activity",location:"",note:"",cost:"",url:"",budgetId:"",airline:"",flightNum:"",fromApt:"",toApt:"",depTime:"",arrTime:"",arrDay:"",terminal:""};}
 
-// SYNC — solo GET para evitar CORS preflight y redirecciones de Apps Script
+// SYNC
+// SAVE: POST no-cors — datos llegan a Apps Script aunque no leamos respuesta
+// LOAD: GET normal — funciona sin CORS issues
 function save(){
   localStorage.setItem("tp7_trips",JSON.stringify(trips));
   localStorage.setItem("tp7_id",actId||"");
@@ -270,39 +272,37 @@ function save(){
 }
 function doSync(){
   syncSt="syncing"; render();
-  var json=JSON.stringify(trips);
-  // Enviamos como parámetro GET — sin POST, sin preflight, sin redirección bloqueada
-  var url=SCRIPT_URL+"?action=save&data="+encodeURIComponent(json)+"&t="+Date.now();
-  fetch(url,{method:"GET",redirect:"follow"})
+  var payload=JSON.stringify({action:"save_trips",trips:trips});
+  // POST no-cors: los datos llegan, no podemos leer respuesta — confirmamos con ping GET
+  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:payload})
+  .then(function(){
+    return fetch(SCRIPT_URL+"?action=ping&t="+Date.now());
+  })
   .then(function(r){return r.text();})
-  .then(function(txt){
-    var d; try{d=JSON.parse(txt);}catch(e){throw new Error("Respuesta inválida: "+txt.slice(0,60));}
-    if(!d.ok) throw new Error(d.error||"Error en Apps Script");
+  .then(function(){
     lastSync=new Date().toLocaleTimeString("es-ES");
     localStorage.setItem("tp7_ls",lastSync);
     syncSt="ok"; syncErr=""; render();
   })
   .catch(function(err){
     syncSt="err"; syncErr=err.message;
-    render(); console.error("Sync:",err.message);
+    render();
   });
 }
 function loadFromSheets(cb){
-  var url=SCRIPT_URL+"?action=load&t="+Date.now();
-  fetch(url,{method:"GET",redirect:"follow"})
+  fetch(SCRIPT_URL+"?action=load&t="+Date.now())
   .then(function(r){return r.text();})
   .then(function(txt){
-    var d; try{d=JSON.parse(txt);}catch(e){cb("parse error: "+txt.slice(0,60));return;}
+    var d; try{d=JSON.parse(txt);}catch(e){cb("parse: "+txt.slice(0,60));return;}
     if(d.ok&&Array.isArray(d.trips)){
-      // MERGE: combine local + remote, remote wins on conflict, keep all unique ids
-      var merged=trips.slice(); // start with local
-      d.trips.forEach(function(rt){
-        // only accept trips with real data (name + startDate)
-        if(!rt.name||!rt.startDate)return;
-        var idx=merged.findIndex(function(lt){return lt.id===rt.id;});
-        if(idx>=0){merged[idx]=rt;}else{merged.push(rt);}
-      });
-      if(merged.length>0){
+      var remote=d.trips.filter(function(t){return t.name&&t.startDate;});
+      if(remote.length>0){
+        var merged=trips.slice();
+        remote.forEach(function(rt){
+          var idx=-1;
+          for(var i=0;i<merged.length;i++){if(merged[i].id===rt.id){idx=i;break;}}
+          if(idx>=0){merged[idx]=rt;}else{merged.push(rt);}
+        });
         trips=merged;
         localStorage.setItem("tp7_trips",JSON.stringify(trips));
       }
