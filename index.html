@@ -31,7 +31,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
 .project-select{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);cursor:pointer;max-width:240px;outline:none}
 .nav-right{display:flex;gap:7px;flex-wrap:wrap}
-
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:100px;font-family:'DM Mono',monospace;border:1px solid;white-space:nowrap}
+.sync-ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.sync-err{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.sync-pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.sync-off{background:var(--surface2);color:var(--muted);border-color:var(--border)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 
 /* BUTTONS */
 .btn{cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s;white-space:nowrap}
@@ -251,7 +256,7 @@ const DEMO={
 // ========== STATE ==========
 let allTrips=JSON.parse(localStorage.getItem("tp_v3")||"null")||[JSON.parse(JSON.stringify(DEMO))];
 let activeId=localStorage.getItem("tp_aid_v3")||allTrips[0].id;
-let scriptUrl=localStorage.getItem("tp_scripturl")||"https://script.google.com/macros/s/AKfycbwCHcRYieNHfSISboLMUB5v14mGOk2hesnhRSrv-FLLBF-VdbPl_Y4m_pjtjGq24fQn/exec";
+let scriptUrl="https://script.google.com/macros/s/AKfycbwCHcRYieNHfSISboLMUB5v14mGOk2hesnhRSrv-FLLBF-VdbPl_Y4m_pjtjGq24fQn/exec";
 let syncStatus="off"; // off | ok | err | pending | syncing
 let lastSync=localStorage.getItem("tp_lastsync")||"";
 let selDay=null;
@@ -262,7 +267,6 @@ let newBu={cat:"flights",desc:"",usd:"",cancel:"",url:""};
 let newCk={group:"",text:"",url:""};
 let showWiz=false,wizStep=1;
 let wizData={name:"",destination:"",startDate:"",endDate:"",travelers:"",exchangeRate:"1.08"};
-
 
 function getTrip(){return allTrips.find(t=>t.id===activeId)||allTrips[0];}
 function save(){localStorage.setItem("tp_v3",JSON.stringify(allTrips));localStorage.setItem("tp_aid_v3",activeId);}
@@ -286,30 +290,30 @@ async function syncToSheets() {
   try {
     const trip = getTrip();
     const records = [
-      ...trip.events.map(e => ({...e, type:"event"})),
-      ...trip.budget.map(b => ({...b, type:"budget"})),
-      ...trip.checklist.map(c => ({...c, type:"checklist", title:c.text})),
+      ...trip.events.map(e => Object.assign({}, e, {type:"event"})),
+      ...trip.budget.map(b => Object.assign({}, b, {type:"budget"})),
+      ...trip.checklist.map(c => Object.assign({}, c, {type:"checklist", title:c.text})),
     ];
     const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({action:"sync_all", records})
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({action:"sync_all", records:records})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Error desconocido");
     lastSync = new Date().toLocaleTimeString("es-ES");
     localStorage.setItem("tp_lastsync", lastSync);
     syncStatus = "ok";
-    toast("✓ Sincronizado con Google Sheets (" + records.length + " filas)");
+    toast("Sincronizado con Google Sheets (" + records.length + " filas)");
   } catch(err) {
     syncStatus = "err";
-    toast("✗ Error al sincronizar: " + err.message, 4000);
+    toast("Error al sincronizar: " + err.message, 4000);
   }
   syncing = false; render();
 }
 
-async function upsertRecord(){}
-async function deleteRecord(){}
+async function upsertRecord(rec) {}
+async function deleteRecord(id) {}
 
 // ========== RENDER ==========
 function render(){
@@ -327,20 +331,30 @@ function render(){
   const tripStart=new Date(trip.startDate+"T00:00:00");
   const daysLeft=Math.ceil((tripStart-today)/86400000);
 
-    let html=`
+  const syncBadge=()=>{
+    if(syncStatus==="ok")return`<span class="sync-badge sync-ok"><span class="sync-dot"></span>Sheets · ${lastSync}</span>`;
+    if(syncStatus==="err")return`<span class="sync-badge sync-err"><span class="sync-dot"></span>Error sync</span>`;
+    if(syncStatus==="pending")return`<span class="sync-badge sync-pending"><span class="sync-dot"></span>Sincronizando...</span>`;
+    if(!scriptUrl)return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sin sincronizar</span>`;
+    return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sheets desconectado</span>`;
+  };
+
+  function syncBtn() {
+    if (syncing) return '<button class="btn ghost" disabled style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:11px;height:11px;border:2px solid #ccc;border-top-color:#333;border-radius:50%;animation:spin 0.7s linear infinite"></span> Sincronizando...</button>';
+    var badge = syncStatus==="ok" ? '<span style="font-size:11px;color:var(--green);font-family:monospace;margin-right:4px">Sheets ' + lastSync + '</span>' : syncStatus==="err" ? '<span style="font-size:11px;color:var(--red);font-family:monospace;margin-right:4px">Error sync</span>' : '';
+    return badge + '<button class="btn" onclick="syncToSheets()" style="display:flex;align-items:center;gap:6px">&#9729; Sincronizar con Sheets</button>';
+  }
+
+  let html=`
   <div class="nav">
     <div class="nav-left">
-      <span class="logo">✈ TRAVEL PLANNER</span>
+      <span class="logo">&#9992; TRAVEL PLANNER</span>
       <select class="project-select" onchange="switchTrip(this.value)">
-        ${allTrips.map(t=>`<option value="${t.id}" ${t.id===activeId?"selected":""}>${esc(t.name)}</option>`).join("")}
+        ${allTrips.map(function(t){return '<option value="'+t.id+'"'+(t.id===activeId?' selected':'')+'>'+esc(t.name)+'</option>';}).join("")}
       </select>
-      ${syncStatus==="ok"?`<span style="font-size:11px;color:var(--green);font-family:'DM Mono',monospace">✓ Sheets ${lastSync}</span>`:syncStatus==="err"?`<span style="font-size:11px;color:var(--red);font-family:'DM Mono',monospace">✗ Error sync</span>`:""}
     </div>
-    <div class="nav-right">
-      <button class="btn ${syncing?"ghost":""}" onclick="syncToSheets()" ${syncing?"disabled":""} style="display:flex;align-items:center;gap:6px">
-        ${syncing?`<span style="display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite"></span>`:"☁"}
-        ${syncing?"Sincronizando...":"Sincronizar con Sheets"}
-      </button>
+    <div class="nav-right" style="align-items:center">
+      ${syncBtn()}
       <button class="btn primary" onclick="openWiz()">+ Nuevo viaje</button>
     </div>
   </div>
@@ -405,7 +419,7 @@ function renderItinerary(days,dayEvs,trip){
       <div><label class="fl">Fecha</label><input type="date" value="${esc(newEv.day||selDay)}" min="${trip.startDate}" max="${trip.endDate}" oninput="newEv.day=this.value"></div>
       <div><label class="fl">Coste (USD)</label><input type="number" value="${esc(newEv.cost)}" oninput="newEv.cost=this.value" placeholder="0"></div>
       <div><label class="fl">Lugar</label><input value="${esc(newEv.location)}" oninput="newEv.location=this.value" placeholder="Ubicación"></div>
-      <div class="ff"><label class="fl">URL del documento (boarding pass, voucher, reserva, hotel...)</label><input type="url" value="${esc(newEv.url)}" oninput="newEv.url=this.value" placeholder="https://"></div>
+      <div class="ff"><label class="fl">URL del documento (boarding pass, voucher, hotel...)</label><input type="url" value="${esc(newEv.url)}" oninput="newEv.url=this.value" placeholder="https://"></div>
       <div class="ff"><label class="fl">Notas</label><textarea oninput="newEv.note=this.value" rows="2" placeholder="Instrucciones, detalles...">${esc(newEv.note)}</textarea></div>
     </div>
     <div class="fa"><button class="btn primary" onclick="addEvent()">Guardar</button><button class="btn" onclick="toggleAddEv()">Cancelar</button></div>
@@ -500,7 +514,7 @@ function renderChecklist(ckDone,ckTotal,pct,ckGroups,trip){
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
       <div><label class="fl">Elemento *</label><input id="nck-t" value="${esc(newCk.text)}" oninput="newCk.text=this.value" placeholder="Qué hay que hacer o llevar"></div>
       <div><label class="fl">Grupo</label><input value="${esc(newCk.group)}" oninput="newCk.group=this.value" placeholder="Pasaportes, Equipaje, Reservas..."></div>
-      <div><label class="fl">URL del documento (reserva, enlace, referencia...)</label><input type="url" value="${esc(newCk.url)}" oninput="newCk.url=this.value" placeholder="https://"></div>
+      <div><label class="fl">URL del documento (reserva, web, referencia...)</label><input type="url" value="${esc(newCk.url)}" oninput="newCk.url=this.value" placeholder="https://"></div>
     </div>
     <div class="fa"><button class="btn primary" onclick="addCk()">Guardar</button><button class="btn" onclick="toggleAddCk()">Cancelar</button></div>
   </div>`:""}
@@ -559,7 +573,7 @@ function renderWizard(){
 }
 
 /* --- SYNC MODAL --- */
-function renderSyncModal(){ return ""; }
+function renderSyncModal(){return '';}
 
 // ========== ACTIONS ==========
 window.switchTab=function(t){activeTab=t;addingEv=addingBu=addingCk=false;render();}
@@ -629,14 +643,14 @@ window.wizNext=function(){
 window.wizBack=function(){wizStep>1?wizStep--:closeWiz();render();}
 
 // SYNC
-window.syncToSheets=function(){syncToSheets();}
+window.syncToSheets=function(){syncToSheets();};
 
 render();
 </script>
 
 <div id="pw-overlay" style="position:fixed;inset:0;background:#F6F4EF;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:1.5rem;font-family:'DM Sans',sans-serif">
   <div style="text-align:center">
-    <div style="font-size:28px;margin-bottom:.5rem">✈</div>
+    <div style="font-size:32px;margin-bottom:.5rem">&#9992;</div>
     <div style="font-size:18px;font-weight:600;color:#1A1816;margin-bottom:.25rem">Travel Planner</div>
     <div style="font-size:13px;color:#6E6860">Introduce la contraseña para continuar</div>
   </div>
@@ -644,31 +658,17 @@ render();
     <input id="pw-input" type="password" placeholder="Contraseña" maxlength="20"
       style="font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 16px;border:1px solid #DDD9D0;border-radius:8px;outline:none;width:200px;text-align:center;background:#fff;color:#1A1816"
       onkeydown="if(event.key==='Enter')checkPw()">
-    <button onclick="checkPw()"
-      style="font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;background:#1A1816;color:#fff;border:none;border-radius:8px;cursor:pointer">
-      Entrar
-    </button>
+    <button onclick="checkPw()" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;background:#1A1816;color:#fff;border:none;border-radius:8px;cursor:pointer">Entrar</button>
   </div>
   <div id="pw-err" style="font-size:12px;color:#B33030;display:none">Contraseña incorrecta</div>
 </div>
 <script>
-(function(){
-  if(sessionStorage.getItem("tp_auth")==="1"){
-    document.getElementById("pw-overlay").style.display="none";
-  }
-})();
+(function(){if(sessionStorage.getItem("tp_auth")==="1"){document.getElementById("pw-overlay").style.display="none";}})();
 function checkPw(){
-  const v=document.getElementById("pw-input").value;
-  if(v==="0000"){
-    sessionStorage.setItem("tp_auth","1");
-    document.getElementById("pw-overlay").style.display="none";
-  } else {
-    document.getElementById("pw-err").style.display="block";
-    document.getElementById("pw-input").value="";
-    document.getElementById("pw-input").focus();
-  }
+  var v=document.getElementById("pw-input").value;
+  if(v==="0000"){sessionStorage.setItem("tp_auth","1");document.getElementById("pw-overlay").style.display="none";}
+  else{document.getElementById("pw-err").style.display="block";document.getElementById("pw-input").value="";document.getElementById("pw-input").focus();}
 }
 </script>
-
 </body>
 </html>
