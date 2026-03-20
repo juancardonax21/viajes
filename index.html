@@ -31,12 +31,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
 .project-select{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);cursor:pointer;max-width:240px;outline:none}
 .nav-right{display:flex;gap:7px;flex-wrap:wrap}
-.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:100px;font-family:'DM Mono',monospace;border:1px solid;white-space:nowrap}
-.sync-ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
-.sync-err{background:var(--red-bg);color:var(--red);border-color:var(--red)}
-.sync-pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
-.sync-off{background:var(--surface2);color:var(--muted);border-color:var(--border)}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
 
 /* BUTTONS */
 .btn{cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s;white-space:nowrap}
@@ -171,6 +166,7 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--te
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:12px;padding:8px 18px;border-radius:100px;box-shadow:var(--sh-md);z-index:2000;opacity:0;transition:opacity 0.25s;pointer-events:none;font-family:'DM Mono',monospace;white-space:nowrap}
 .toast.show{opacity:1}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:620px){
   .summary-grid,.bsum{grid-template-columns:1fr 1fr}
   .fg{grid-template-columns:1fr}
@@ -266,8 +262,7 @@ let newBu={cat:"flights",desc:"",usd:"",cancel:"",url:""};
 let newCk={group:"",text:"",url:""};
 let showWiz=false,wizStep=1;
 let wizData={name:"",destination:"",startDate:"",endDate:"",travelers:"",exchangeRate:"1.08"};
-let showSync=false;
-let syncTestMsg="";
+
 
 function getTrip(){return allTrips.find(t=>t.id===activeId)||allTrips[0];}
 function save(){localStorage.setItem("tp_v3",JSON.stringify(allTrips));localStorage.setItem("tp_aid_v3",activeId);}
@@ -282,80 +277,39 @@ function urlHost(s){try{return new URL(s).hostname.replace(/^www\./,"");}catch{r
 function toast(msg,dur=2500){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),dur);}
 
 // ========== SHEETS SYNC ==========
-async function sheetsRequest(method,body){
-  if(!scriptUrl)throw new Error("Sin URL configurada");
-  const opts={method,headers:{"Content-Type":"application/json"}};
-  if(body)opts.body=JSON.stringify(body);
-  const res=await fetch(scriptUrl,opts);
-  if(!res.ok)throw new Error("HTTP "+res.status);
-  return await res.json();
-}
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCHcRYieNHfSISboLMUB5v14mGOk2hesnhRSrv-FLLBF-VdbPl_Y4m_pjtjGq24fQn/exec";
+let syncing = false;
 
-async function syncPull(){
-  if(!scriptUrl)return;
-  syncStatus="pending";render();
-  try{
-    const data=await sheetsRequest("GET");
-    if(!data.ok)throw new Error(data.error||"Error desconocido");
-    const trip=getTrip();
-    const rows=data.rows||[];
-    if(rows.length){
-      trip.events=rows.filter(r=>r.type==="event").map(r=>({id:r.id,day:r.day||"",time:r.time||"",title:r.title||"",cat:r.cat||"other",location:r.location||"",note:r.note||"",cost:parseFloat(r.cost)||0,url:r.url||""}));
-      trip.budget=rows.filter(r=>r.type==="budget").map(r=>({id:r.id,cat:r.cat||"other",desc:r.desc||"",usd:parseFloat(r.usd)||0,cancel:r.cancel||"",url:r.cancel_url||r.url||""}));
-      trip.checklist=rows.filter(r=>r.type==="checklist").map(r=>({id:r.id,group:r.group||"General",text:r.title||r.desc||"",done:r.done==="TRUE"||r.done===true||r.done==="true",url:r.url||""}));
-      save();
-    }
-    syncStatus="ok";lastSync=new Date().toLocaleTimeString("es-ES");localStorage.setItem("tp_lastsync",lastSync);
-    toast("✓ Sincronizado con Google Sheets");
-  }catch(err){
-    syncStatus="err";
-    toast("✗ Error al sincronizar: "+err.message,3500);
-  }
-  render();
-}
-
-async function syncPush(){
-  if(!scriptUrl)return;
-  syncStatus="pending";render();
-  try{
-    const trip=getTrip();
-    const records=[
-      ...trip.events.map(e=>({...e,type:"event"})),
-      ...trip.budget.map(b=>({...b,type:"budget",cancel_url:b.url})),
-      ...trip.checklist.map(c=>({...c,type:"checklist",title:c.text})),
+async function syncToSheets() {
+  if (syncing) return;
+  syncing = true; render();
+  try {
+    const trip = getTrip();
+    const records = [
+      ...trip.events.map(e => ({...e, type:"event"})),
+      ...trip.budget.map(b => ({...b, type:"budget"})),
+      ...trip.checklist.map(c => ({...c, type:"checklist", title:c.text})),
     ];
-    const data=await sheetsRequest("POST",{action:"sync_all",records});
-    if(!data.ok)throw new Error(data.error||"Error desconocido");
-    syncStatus="ok";lastSync=new Date().toLocaleTimeString("es-ES");localStorage.setItem("tp_lastsync",lastSync);
-    toast("✓ Enviado a Google Sheets ("+records.length+" filas)");
-  }catch(err){
-    syncStatus="err";
-    toast("✗ Error al enviar: "+err.message,3500);
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({action:"sync_all", records})
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Error desconocido");
+    lastSync = new Date().toLocaleTimeString("es-ES");
+    localStorage.setItem("tp_lastsync", lastSync);
+    syncStatus = "ok";
+    toast("✓ Sincronizado con Google Sheets (" + records.length + " filas)");
+  } catch(err) {
+    syncStatus = "err";
+    toast("✗ Error al sincronizar: " + err.message, 4000);
   }
-  render();
+  syncing = false; render();
 }
 
-async function upsertRecord(rec){
-  if(!scriptUrl)return;
-  try{await sheetsRequest("POST",{action:"upsert",record:rec});syncStatus="ok";}
-  catch(err){syncStatus="err";}
-}
-async function deleteRecord(id){
-  if(!scriptUrl)return;
-  try{await sheetsRequest("POST",{action:"delete",id});}
-  catch{}
-}
-
-async function testConnection(){
-  syncTestMsg="Probando conexión...";render();
-  try{
-    const d=await sheetsRequest("POST",{action:"ping"});
-    syncTestMsg=d.ok?"✅ Conexión correcta. ¡Listo para sincronizar!":"❌ Respuesta inesperada del script.";
-  }catch(err){
-    syncTestMsg="❌ Error: "+err.message;
-  }
-  render();
-}
+async function upsertRecord(){}
+async function deleteRecord(){}
 
 // ========== RENDER ==========
 function render(){
@@ -373,26 +327,20 @@ function render(){
   const tripStart=new Date(trip.startDate+"T00:00:00");
   const daysLeft=Math.ceil((tripStart-today)/86400000);
 
-  const syncBadge=()=>{
-    if(syncStatus==="ok")return`<span class="sync-badge sync-ok"><span class="sync-dot"></span>Sheets · ${lastSync}</span>`;
-    if(syncStatus==="err")return`<span class="sync-badge sync-err"><span class="sync-dot"></span>Error sync</span>`;
-    if(syncStatus==="pending")return`<span class="sync-badge sync-pending"><span class="sync-dot"></span>Sincronizando...</span>`;
-    if(!scriptUrl)return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sin sincronizar</span>`;
-    return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sheets desconectado</span>`;
-  };
-
-  let html=`
+    let html=`
   <div class="nav">
     <div class="nav-left">
       <span class="logo">✈ TRAVEL PLANNER</span>
       <select class="project-select" onchange="switchTrip(this.value)">
         ${allTrips.map(t=>`<option value="${t.id}" ${t.id===activeId?"selected":""}>${esc(t.name)}</option>`).join("")}
       </select>
-      ${syncBadge()}
+      ${syncStatus==="ok"?`<span style="font-size:11px;color:var(--green);font-family:'DM Mono',monospace">✓ Sheets ${lastSync}</span>`:syncStatus==="err"?`<span style="font-size:11px;color:var(--red);font-family:'DM Mono',monospace">✗ Error sync</span>`:""}
     </div>
     <div class="nav-right">
-      ${scriptUrl?`<button class="btn ghost sm" onclick="syncPull()">↓ Pull</button><button class="btn ghost sm" onclick="syncPush()">↑ Push</button>`:""}
-      <button class="btn" onclick="openSync()">⚙ Google Sheets</button>
+      <button class="btn ${syncing?"ghost":""}" onclick="syncToSheets()" ${syncing?"disabled":""} style="display:flex;align-items:center;gap:6px">
+        ${syncing?`<span style="display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite"></span>`:"☁"}
+        ${syncing?"Sincronizando...":"Sincronizar con Sheets"}
+      </button>
       <button class="btn primary" onclick="openWiz()">+ Nuevo viaje</button>
     </div>
   </div>
@@ -457,7 +405,7 @@ function renderItinerary(days,dayEvs,trip){
       <div><label class="fl">Fecha</label><input type="date" value="${esc(newEv.day||selDay)}" min="${trip.startDate}" max="${trip.endDate}" oninput="newEv.day=this.value"></div>
       <div><label class="fl">Coste (USD)</label><input type="number" value="${esc(newEv.cost)}" oninput="newEv.cost=this.value" placeholder="0"></div>
       <div><label class="fl">Lugar</label><input value="${esc(newEv.location)}" oninput="newEv.location=this.value" placeholder="Ubicación"></div>
-      <div class="ff"><label class="fl">URL — boarding pass, voucher, reserva...</label><input type="url" value="${esc(newEv.url)}" oninput="newEv.url=this.value" placeholder="https://"></div>
+      <div class="ff"><label class="fl">URL del documento (boarding pass, voucher, reserva, hotel...)</label><input type="url" value="${esc(newEv.url)}" oninput="newEv.url=this.value" placeholder="https://"></div>
       <div class="ff"><label class="fl">Notas</label><textarea oninput="newEv.note=this.value" rows="2" placeholder="Instrucciones, detalles...">${esc(newEv.note)}</textarea></div>
     </div>
     <div class="fa"><button class="btn primary" onclick="addEvent()">Guardar</button><button class="btn" onclick="toggleAddEv()">Cancelar</button></div>
@@ -511,7 +459,7 @@ function renderBudget(byBCat,totalUSD,totalEUR,trip){
       <div><label class="fl">Categoría</label><select onchange="newBu.cat=this.value">${Object.entries(BCAT).map(([k,v])=>`<option value="${k}" ${newBu.cat===k?"selected":""}>${v}</option>`).join("")}</select></div>
       <div><label class="fl">Importe USD</label><input type="number" value="${esc(newBu.usd)}" oninput="newBu.usd=this.value" placeholder="0"></div>
       <div><label class="fl">Cancelación gratuita hasta</label><input type="date" value="${esc(newBu.cancel)}" oninput="newBu.cancel=this.value"></div>
-      <div class="ff"><label class="fl">URL — confirmación, voucher, booking...</label><input type="url" value="${esc(newBu.url)}" oninput="newBu.url=this.value" placeholder="https://"></div>
+      <div class="ff"><label class="fl">URL del documento (confirmación, voucher, reserva...)</label><input type="url" value="${esc(newBu.url)}" oninput="newBu.url=this.value" placeholder="https://"></div>
     </div>
     <div class="fa"><button class="btn primary" onclick="addBudget()">Guardar</button><button class="btn" onclick="toggleAddBu()">Cancelar</button></div>
   </div>`:""}
@@ -552,7 +500,7 @@ function renderChecklist(ckDone,ckTotal,pct,ckGroups,trip){
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
       <div><label class="fl">Elemento *</label><input id="nck-t" value="${esc(newCk.text)}" oninput="newCk.text=this.value" placeholder="Qué hay que hacer o llevar"></div>
       <div><label class="fl">Grupo</label><input value="${esc(newCk.group)}" oninput="newCk.group=this.value" placeholder="Pasaportes, Equipaje, Reservas..."></div>
-      <div><label class="fl">URL — enlace a reserva, documento, web...</label><input type="url" value="${esc(newCk.url)}" oninput="newCk.url=this.value" placeholder="https://"></div>
+      <div><label class="fl">URL del documento (reserva, enlace, referencia...)</label><input type="url" value="${esc(newCk.url)}" oninput="newCk.url=this.value" placeholder="https://"></div>
     </div>
     <div class="fa"><button class="btn primary" onclick="addCk()">Guardar</button><button class="btn" onclick="toggleAddCk()">Cancelar</button></div>
   </div>`:""}
@@ -611,42 +559,7 @@ function renderWizard(){
 }
 
 /* --- SYNC MODAL --- */
-function renderSyncModal(){
-  return`<div class="overlay" onclick="if(event.target===this)closeSync()"><div class="modal" style="max-width:580px">
-    <div class="modal-title">Conectar con Google Sheets</div>
-    <div class="modal-sub">Sincronización bidireccional automática. Los datos del planificador se leen y escriben en tu hoja.</div>
-
-    <div class="sync-step">
-      <div class="sync-step-num">Paso 1</div>
-      <div class="sync-step-title">Instala el Apps Script en tu Google Sheet</div>
-      <div class="sync-step-desc">Abre tu Google Sheet → <strong>Extensiones → Apps Script</strong> → Pega el código del archivo <code>TravelPlanner_AppsScript.gs</code> → Guarda → <strong>Implementar → Nueva implementación</strong> (tipo: Aplicación web, acceso: Cualquiera).</div>
-    </div>
-    <div class="sync-step">
-      <div class="sync-step-num">Paso 2</div>
-      <div class="sync-step-title">Pega aquí la URL de tu implementación</div>
-      <div class="sync-step-desc">Después de implementar, Google te da una URL del tipo <code>https://script.google.com/macros/s/...</code></div>
-      <div class="sync-url-row">
-        <input id="script-url-input" type="url" value="${esc(scriptUrl)}" placeholder="https://script.google.com/macros/s/..." oninput="scriptUrl=this.value;localStorage.setItem('tp_scripturl',scriptUrl)">
-        <button class="btn primary" onclick="testConnection()">Probar</button>
-      </div>
-      ${syncTestMsg?`<div class="sync-status-row">${syncTestMsg}</div>`:""}
-    </div>
-    <div class="sync-step">
-      <div class="sync-step-num">Paso 3</div>
-      <div class="sync-step-title">Sincroniza cuando quieras</div>
-      <div class="sync-step-desc">Usa los botones <strong>↓ Pull</strong> (importar desde Sheets) y <strong>↑ Push</strong> (exportar al Sheet) que aparecerán en la barra superior. Los datos se sincronizan al instante.</div>
-      <div class="sync-url-row">
-        <button class="btn" onclick="syncPull();closeSync()">↓ Pull ahora (Sheets → App)</button>
-        <button class="btn primary" onclick="syncPush();closeSync()">↑ Push ahora (App → Sheets)</button>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <div style="font-size:11px;color:var(--muted)">Los datos se almacenan también localmente en el navegador.</div>
-      <button class="btn" onclick="closeSync()">Cerrar</button>
-    </div>
-  </div></div>`;
-}
+function renderSyncModal(){ return ""; }
 
 // ========== ACTIONS ==========
 window.switchTab=function(t){activeTab=t;addingEv=addingBu=addingCk=false;render();}
@@ -716,11 +629,7 @@ window.wizNext=function(){
 window.wizBack=function(){wizStep>1?wizStep--:closeWiz();render();}
 
 // SYNC
-window.openSync=function(){showSync=true;syncTestMsg="";render();}
-window.closeSync=function(){showSync=false;render();}
-window.testConnection=function(){testConnection();}
-window.syncPull=function(){syncPull();}
-window.syncPush=function(){syncPush();}
+window.syncToSheets=function(){syncToSheets();}
 
 render();
 </script>
