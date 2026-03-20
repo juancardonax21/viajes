@@ -244,7 +244,7 @@ var nBu={cat:"flights",desc:"",amt:"",cin:"",cout:"",cancel:"",url:""};
 var nCk={grp:"",text:"",url:""};
 var wiz=false,wstep=1,wd={name:"",destination:"",startDate:"",endDate:"",currency:"USD",csym:"$",exBase:"EUR",exRate:"1.08",travelers:[""]};
 var showSet=false,setBuf={};
-var syncT=null,syncSt="idle",lastSync=localStorage.getItem("tp7_ls")||"";
+var syncT=null,syncSt="idle",syncErr="",lastSync=localStorage.getItem("tp7_ls")||"";
 
 function T(){return trips.find(function(t){return t.id===actId;})||null;}
 function uid(){return "x"+Date.now()+Math.random().toString(36).slice(2,5);}
@@ -260,34 +260,58 @@ function toast(msg,dur){var el=document.getElementById("toast");el.textContent=m
 function mkEv(){return {day:selDay,time:"09:00",title:"",cat:"activity",location:"",note:"",cost:"",url:"",budgetId:"",airline:"",flightNum:"",fromApt:"",toApt:"",depTime:"",arrTime:"",arrDay:"",terminal:""};}
 
 // SYNC
+// Uses text/plain (no CORS preflight) so we can read the response
 function save(){
   localStorage.setItem("tp7_trips",JSON.stringify(trips));
   localStorage.setItem("tp7_id",actId||"");
   if(!SCRIPT_URL)return;
   clearTimeout(syncT);
   syncSt="pending";
-  syncT=setTimeout(doSync,3000);
+  syncT=setTimeout(doSync,2000);
 }
 function doSync(){
-  syncSt="syncing";render();
-  var body=JSON.stringify({action:"save_trips",trips:trips});
-  var timer=setTimeout(function(){syncSt="ok";lastSync=new Date().toLocaleTimeString("es-ES");localStorage.setItem("tp7_ls",lastSync);render();},4500);
-  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:body})
-    .catch(function(){clearTimeout(timer);syncSt="err";render();});
+  syncSt="syncing"; render();
+  var payload=JSON.stringify({action:"save_trips",trips:trips});
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:payload
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return r.text();
+  })
+  .then(function(txt){
+    var d; try{d=JSON.parse(txt);}catch(e){throw new Error("Respuesta no válida del script");}
+    if(!d.ok) throw new Error(d.error||"Error en el script");
+    lastSync=new Date().toLocaleTimeString("es-ES");
+    localStorage.setItem("tp7_ls",lastSync);
+    syncSt="ok"; render();
+  })
+  .catch(function(err){
+    syncSt="err";
+    syncErr=err.message;
+    render();
+    console.error("Sync error:",err);
+  });
 }
-// Load from Sheets on init for cross-device sync
+// Load from Sheets on init — cross-device sync
 function loadFromSheets(cb){
-  fetch(SCRIPT_URL+"?t="+Date.now())
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.ok&&data.trips&&data.trips.length>0){
-        trips=data.trips;
-        localStorage.setItem("tp7_trips",JSON.stringify(trips));
-      }
-      cb();
-    })
-    .catch(function(){cb();});
+  fetch(SCRIPT_URL+"?action=load&t="+Date.now())
+  .then(function(r){return r.text();})
+  .then(function(txt){
+    var d; try{d=JSON.parse(txt);}catch(e){cb("parse");return;}
+    if(d.ok&&Array.isArray(d.trips)&&d.trips.length>0){
+      trips=d.trips;
+      localStorage.setItem("tp7_trips",JSON.stringify(trips));
+      cb(null);
+    } else {
+      cb(d.error||"empty");
+    }
+  })
+  .catch(function(err){cb(err.message);});
 }
+function manualSync(){doSync();}
 
 // RENDER
 function render(){
@@ -307,7 +331,7 @@ function render(){
   var sh="";
   if(syncSt==="syncing"||syncSt==="pending")sh='<span class="sync-lbl sync-go"><span class="spin"></span> Guardando...</span>';
   else if(syncSt==="ok")sh='<span class="sync-lbl sync-ok">&#10003; '+esc(lastSync)+'</span>';
-  else if(syncSt==="err")sh='<span class="sync-lbl sync-err">&#10007; Error sync</span>';
+  else if(syncSt==="err")sh='<span class="sync-lbl sync-err" title="'+esc(syncErr)+'">&#10007; Error &mdash; <button class="btn sml" style="color:var(--red);border-color:var(--red);padding:2px 8px;font-size:11px" onclick="manualSync()">Reintentar</button></span>';
   var h="";
   h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+sh+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
   h+='<div class="hdr"><div class="hdr-top"><div><div class="dest-lbl">'+esc(t.destination)+'</div><div class="trip-name">'+esc(t.name)+'</div><div class="trip-meta">'+fmt(t.startDate,{day:"numeric",month:"long"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"long",year:"numeric"})+'&nbsp;&middot;&nbsp;'+dd.length+' d&iacute;as&nbsp;&middot;&nbsp;'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
@@ -607,14 +631,21 @@ function wizBack(){wstep>1?wstep--:closeWiz();render();}
 
 var _g=[goHome,openTrip,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
+window.manualSync=manualSync;
 window.nEv=nEv;window.nBu=nBu;window.nCk=nCk;window.eBuf=eBuf;window.wd=wd;window.setBuf=setBuf;
 
 // INIT: load from Sheets for cross-device sync, then render
 if(actId&&!trips.find(function(t){return t.id===actId;}))actId=null;
 if(SCRIPT_URL){
-  syncSt="syncing";
-  loadFromSheets(function(){
-    syncSt="idle";
+  syncSt="syncing"; rHome();
+  loadFromSheets(function(err){
+    if(!err){
+      syncSt="ok"; lastSync=new Date().toLocaleTimeString("es-ES");
+      localStorage.setItem("tp7_ls",lastSync);
+    } else {
+      syncSt=(err==="empty")?"idle":"err";
+      syncErr=err==="empty"?"":err;
+    }
     if(actId)render();else rHome();
   });
 }else{
