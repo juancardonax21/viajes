@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Planner ✈</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F6F4EF;--surface:#FFF;--surface2:#EFECE6;--surface3:#E8E4DC;
+  --border:#DDD9D0;--border2:#C4BEB5;
+  --text:#1A1816;--muted:#6E6860;--faint:#B0A89E;
+  --blue:#1A5CA8;--blue-bg:#E8F0FB;
+  --green:#0D6B4A;--green-bg:#DDF3EA;
+  --purple:#4F35B3;--purple-bg:#ECEAFC;
+  --amber:#9E600A;--amber-bg:#FDF2DC;
+  --red:#B33030;--red-bg:#FAE8E8;
+  --gray:#5A5650;--gray-bg:#EDEAE6;
+  --orange:#C05B10;--orange-bg:#FDEEDD;
+  --r:10px;--rs:6px;
+  --sh:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  --sh-md:0 4px 16px rgba(0,0,0,0.1),0 1px 4px rgba(0,0,0,0.06);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+.app{max-width:940px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+
+/* NAV */
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap}
+.nav-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
+.project-select{font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);cursor:pointer;max-width:240px;outline:none}
+.nav-right{display:flex;gap:7px;flex-wrap:wrap}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:100px;font-family:'DM Mono',monospace;border:1px solid;white-space:nowrap}
+.sync-ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.sync-err{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.sync-pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.sync-off{background:var(--surface2);color:var(--muted);border-color:var(--border)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* BUTTONS */
+.btn{cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s;white-space:nowrap}
+.btn:hover{border-color:var(--border2)}
+.btn.primary{background:var(--text);color:#fff;border-color:var(--text)}
+.btn.primary:hover{opacity:0.87}
+.btn.ghost{background:none;border:1px solid var(--border);color:var(--muted)}
+.btn.ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn.danger{color:var(--muted);border:none;background:none;padding:2px 6px;font-size:12px}
+.btn.danger:hover{color:var(--red)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:0.4;cursor:default}
+
+/* HEADER */
+.header{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem 1.75rem;margin-bottom:1rem;box-shadow:var(--sh)}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.trip-dest{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace}
+.trip-name{font-size:22px;font-weight:600;line-height:1.2}
+.trip-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.countdown{text-align:right;flex-shrink:0}
+.countdown-num{font-size:40px;font-weight:600;line-height:1;font-family:'DM Mono',monospace}
+.countdown-label{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.06em;text-transform:uppercase}
+.travelers{display:flex;gap:5px;margin-top:.875rem;flex-wrap:wrap}
+.chip{font-size:11px;padding:3px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;color:var(--muted)}
+
+/* SUMMARY */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.875rem 1.125rem;box-shadow:var(--sh)}
+.sc-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;font-family:'DM Mono',monospace}
+.sc-num{font-size:20px;font-weight:600;font-family:'DM Mono',monospace}
+.sc-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.progress-bar{height:4px;background:var(--surface2);border-radius:100px;overflow:hidden;margin-top:7px}
+.progress-fill{height:100%;background:var(--text);border-radius:100px;transition:width 0.4s}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:.625rem 1.25rem;font-size:13px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:-1px;transition:all 0.15s}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+
+/* DAY PICKER */
+.day-picker{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:1rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.day-picker::-webkit-scrollbar{display:none}
+.day-btn{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:9px 13px;cursor:pointer;text-align:center;min-width:62px;transition:all 0.15s}
+.day-btn:hover{border-color:var(--border2)}
+.day-btn.active{background:var(--text);border-color:var(--text)}
+.day-btn .wd{font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;font-family:'DM Mono',monospace}
+.day-btn .dd{font-size:19px;font-weight:600;line-height:1;color:var(--text)}
+.day-btn .mo{font-size:10px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace}
+.day-btn.active .wd,.day-btn.active .dd,.day-btn.active .mo{color:#fff}
+.day-dot{width:4px;height:4px;border-radius:50%;background:var(--border);margin:4px auto 0}
+.day-btn.active .day-dot{background:rgba(255,255,255,0.45)}
+
+/* SECTION HEADER */
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+.sh-title{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.06em;text-transform:uppercase}
+
+/* FORM */
+.form-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.125rem;margin-bottom:1rem}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.ff{grid-column:1/-1}
+.fl{font-size:10px;color:var(--muted);display:block;margin-bottom:3px;font-family:'DM Mono',monospace;letter-spacing:0.06em;text-transform:uppercase}
+input,select,textarea{font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);width:100%;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--text)}
+textarea{resize:vertical}
+.fa{display:flex;gap:8px;align-items:center;margin-top:4px}
+
+/* EVENTS */
+.ev-list{display:flex;flex-direction:column;gap:7px}
+.ev{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.875rem 1.125rem;box-shadow:var(--sh);transition:border-color 0.15s}
+.ev:hover{border-color:var(--border2)}
+.ev-time{font-size:12px;font-weight:500;min-width:40px;text-align:right;font-family:'DM Mono',monospace;padding-top:2px;color:var(--muted)}
+.ev-bar{width:3px;border-radius:4px;flex-shrink:0;align-self:stretch;min-height:20px}
+.ev-body{flex:1;min-width:0}
+.ev-title{font-size:14px;font-weight:500;margin-bottom:2px}
+.ev-loc{font-size:12px;color:var(--muted)}
+.ev-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;font-style:italic}
+.pill-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--blue);text-decoration:none;margin-top:5px;background:var(--blue-bg);padding:2px 9px;border-radius:100px;border:1px solid #C5D9F2}
+.pill-link:hover{opacity:.8}
+.ev-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.badge{font-size:11px;padding:2px 8px;border-radius:100px;font-weight:500;white-space:nowrap}
+.ev-cost{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.empty{text-align:center;padding:3rem 1rem;color:var(--faint);font-size:14px;line-height:2.2}
+
+/* BUDGET */
+.bsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.bc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;border-left:3px solid}
+.bc-name{font-size:11px;color:var(--muted);margin-bottom:1px;font-family:'DM Mono',monospace}
+.bc-count{font-size:10px;color:var(--faint)}
+.bc-usd{font-size:15px;font-weight:600;font-family:'DM Mono',monospace}
+.bc-eur{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.bgt{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:1rem 0 .4rem;font-family:'DM Mono',monospace}
+.bi{display:flex;align-items:center;gap:10px;padding:.6rem .875rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px;border-left:3px solid}
+.bi-desc{font-size:13px}
+.bi-cancel{font-size:11px;color:var(--faint);margin-top:1px;font-family:'DM Mono',monospace}
+.bi-amt{text-align:right;flex-shrink:0}
+.bi-usd{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}
+.bi-eur{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.rate-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+
+/* CHECKLIST */
+.ck-pt{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.ck-g{margin-bottom:1.25rem}
+.ck-gt{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:.35rem;display:flex;justify-content:space-between;font-family:'DM Mono',monospace}
+.ck-i{display:flex;align-items:center;gap:10px;padding:.6rem .875rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:3px;transition:border-color 0.15s}
+.ck-i:hover{border-color:var(--border2)}
+input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--text);flex-shrink:0}
+.ck-text{flex:1;font-size:13px;transition:color 0.2s}
+.ck-done{color:var(--faint);text-decoration:line-through}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(20,18,16,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem;backdrop-filter:blur(2px)}
+.modal{background:var(--surface);border-radius:calc(var(--r)*1.5);padding:2rem 2.25rem;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-md)}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:.25rem}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
+.wiz-progress{display:flex;gap:5px;margin-bottom:1.5rem}
+.wiz-dot{height:4px;flex:1;border-radius:100px;background:var(--surface2);transition:background 0.3s}
+.wiz-dot.done{background:var(--text)}
+.wiz-label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem}
+.modal-footer{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+.field-group{margin-bottom:.875rem}
+
+/* SYNC MODAL */
+.sync-step{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:.875rem}
+.sync-step-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.sync-step-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.sync-step-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.sync-url-row{display:flex;gap:8px;margin-top:.75rem}
+.sync-status-row{display:flex;align-items:center;gap:8px;margin-top:.75rem;font-size:12px;color:var(--muted)}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:12px;padding:8px 18px;border-radius:100px;box-shadow:var(--sh-md);z-index:2000;opacity:0;transition:opacity 0.25s;pointer-events:none;font-family:'DM Mono',monospace;white-space:nowrap}
+.toast.show{opacity:1}
+
+@media(max-width:620px){
+  .summary-grid,.bsum{grid-template-columns:1fr 1fr}
+  .fg{grid-template-columns:1fr}
+  .header-top,.nav{flex-direction:column}
+  .countdown{text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">Cargando...</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== DATA ==========
+const CAT={
+  flight:{label:"Vuelo",color:"#1A5CA8",bg:"#E8F0FB"},
+  hotel:{label:"Hotel",color:"#0D6B4A",bg:"#DDF3EA"},
+  activity:{label:"Actividad",color:"#4F35B3",bg:"#ECEAFC"},
+  meal:{label:"Comida",color:"#9E600A",bg:"#FDF2DC"},
+  transport:{label:"Transporte",color:"#B33030",bg:"#FAE8E8"},
+  other:{label:"Otro",color:"#5A5650",bg:"#EDEAE6"},
+};
+const BCAT={flights:"Vuelos",hotels:"Hoteles",transport:"Transporte",activities:"Actividades",meals:"Comidas",other:"Otros gastos"};
+const BCAT_C={flights:"#1A5CA8",hotels:"#0D6B4A",transport:"#B33030",activities:"#4F35B3",meals:"#9E600A",other:"#5A5650"};
+
+const DEMO={
+  id:"miami2026",name:"Semana Santa · Miami 2026",destination:"Miami, Florida, USA",
+  startDate:"2026-03-27",endDate:"2026-04-05",exchangeRate:1.08,
+  travelers:["Bea Fernández","Juan Cantona","Nicolás Cantona"],
+  events:[
+    {id:"e1",day:"2026-03-27",time:"07:30",title:"Vuelo MAD → MIA",cat:"flight",location:"Madrid · T4S",note:"Boarding 07:00. Llegada MIA 15:30h local.",cost:817,url:""},
+    {id:"e2",day:"2026-03-27",time:"16:00",title:"Check-in Le Particulier Miami",cat:"hotel",location:"Miami Beach",note:"Comprobar early check-in.",cost:0,url:""},
+    {id:"e3",day:"2026-03-28",time:"09:00",title:"Playa Miami Beach",cat:"activity",location:"South Beach",note:"Alquiler de tumbonas y sombrilla.",cost:60,url:""},
+    {id:"e4",day:"2026-03-28",time:"20:00",title:"Cena Versailles",cat:"meal",location:"SW 8th St, Miami",note:"Restaurante cubano icónico.",cost:80,url:""},
+    {id:"e5",day:"2026-03-29",time:"07:30",title:"Vuelo MIA → ORL",cat:"flight",location:"Miami Airport",note:"",cost:0,url:""},
+    {id:"e6",day:"2026-03-29",time:"10:00",title:"Hollywood Studios",cat:"activity",location:"Walt Disney World",note:"Star Wars: Rise of the Resistance. Pandora: Flight of Passage.",cost:115,url:""},
+    {id:"e7",day:"2026-03-30",time:"09:30",title:"Animal Kingdom",cat:"activity",location:"Walt Disney World",note:"Kilimanjaro Safaris. Festival of the Lion King.",cost:115,url:""},
+    {id:"e8",day:"2026-03-31",time:"09:30",title:"EPCOT",cat:"activity",location:"Walt Disney World",note:"Guardians of the Galaxy: Cosmic Rewind. Soarin'.",cost:115,url:""},
+    {id:"e9",day:"2026-04-01",time:"09:00",title:"Vuelo ORL → RDU",cat:"flight",location:"Orlando Airport",note:"Recogida coche.",cost:0,url:""},
+    {id:"e10",day:"2026-04-01",time:"13:00",title:"Wild Horse Adventure Tour",cat:"activity",location:"OBX, Carolina del Norte",note:"9 personas. Reserva confirmada. Aprox. 3h.",cost:610,url:""},
+    {id:"e11",day:"2026-04-01",time:"17:00",title:"Cape Hatteras Lighthouse",cat:"activity",location:"OBX, NC",note:"",cost:0,url:""},
+    {id:"e12",day:"2026-04-02",time:"09:00",title:"Pea Island Wildlife Refuge",cat:"activity",location:"OBX, NC",note:"Observación de aves.",cost:0,url:""},
+    {id:"e13",day:"2026-04-02",time:"18:00",title:"Vuelo RDU → MIA",cat:"flight",location:"Raleigh-Durham Airport",note:"Devolución coche antes.",cost:0,url:""},
+    {id:"e14",day:"2026-04-03",time:"10:00",title:"Desayuno Brickell City Centre",cat:"meal",location:"Miami, Brickell",note:"",cost:40,url:""},
+    {id:"e15",day:"2026-04-03",time:"14:00",title:"Paseo Miami River Walk",cat:"activity",location:"Downtown Miami",note:"",cost:0,url:""},
+    {id:"e16",day:"2026-04-04",time:"13:00",title:"Mall of the Americas",cat:"activity",location:"Miami",note:"Compras.",cost:0,url:""},
+    {id:"e17",day:"2026-04-04",time:"20:00",title:"Cena Bayside Marketplace",cat:"meal",location:"Miami, Bayside",note:"",cost:80,url:""},
+    {id:"e18",day:"2026-04-05",time:"16:30",title:"Vuelo MIA → MAD",cat:"flight",location:"Miami · Terminal D",note:"Boarding 16:00. Llegada MAD 10:05+1.",cost:817,url:""},
+  ],
+  budget:[
+    {id:"b1",cat:"flights",desc:"Vuelo Principal MAD ↔ MIA (3 pax)",usd:2451.03,cancel:"",url:""},
+    {id:"b2",cat:"flights",desc:"Vuelo interno ORL → RDU",usd:428.26,cancel:"",url:""},
+    {id:"b3",cat:"flights",desc:"Vuelo interno RDU → MIA",usd:464.70,cancel:"",url:""},
+    {id:"b4",cat:"hotels",desc:"Le Particulier Miami · 9 noches",usd:4130,cancel:"2026-03-15",url:""},
+    {id:"b5",cat:"hotels",desc:"Smart Brickell Hotel · 3 noches",usd:525.40,cancel:"2026-03-31",url:""},
+    {id:"b6",cat:"hotels",desc:"Holiday Inn Lake Buena Vista",usd:337.17,cancel:"2026-03-31",url:""},
+    {id:"b7",cat:"hotels",desc:"Hilton Garden Inn OBX",usd:381.33,cancel:"2026-03-25",url:""},
+    {id:"b8",cat:"activities",desc:"Disney tickets Juan + Nicolás (3 días)",usd:1503,cancel:"",url:""},
+    {id:"b9",cat:"activities",desc:"Disney tickets Bea (3 días)",usd:281,cancel:"",url:""},
+    {id:"b10",cat:"activities",desc:"Wild Horse Adventure Tour (9 pers)",usd:610,cancel:"",url:""},
+    {id:"b11",cat:"transport",desc:"Alquiler vehículo ORL → RDU",usd:320.09,cancel:"",url:""},
+    {id:"b12",cat:"meals",desc:"Presupuesto comidas estimado",usd:600,cancel:"",url:""},
+  ],
+  checklist:[
+    {id:"c1",group:"Pasaportes",text:"Bea Fernández — válido hasta 15/01/2027",done:false,url:""},
+    {id:"c2",group:"Pasaportes",text:"Juan Cantona — válido hasta 02/05/2034",done:false,url:""},
+    {id:"c3",group:"Pasaportes",text:"Nicolás Cantona — válido hasta 10/10/2029",done:false,url:""},
+    {id:"c4",group:"Documentos",text:"Libro de Familia",done:false,url:""},
+    {id:"c5",group:"Documentos",text:"Certificado de Asistencia Sanitaria",done:false,url:""},
+    {id:"c6",group:"Documentos",text:"Tarjetas de embarque (imprimir o móvil)",done:false,url:""},
+    {id:"c7",group:"Documentos",text:"ESTA — autorización entrada USA (todos)",done:false,url:"https://esta.cbp.dhs.gov/"},
+    {id:"c8",group:"Equipaje",text:"Maletas — revisar peso máx. 23 kg",done:false,url:""},
+    {id:"c9",group:"Equipaje",text:"Ropa playa + protector solar",done:false,url:""},
+    {id:"c10",group:"Tecnología",text:"Adaptadores enchufe USA (tipo A/B)",done:false,url:""},
+    {id:"c11",group:"Tecnología",text:"Tarjetas SIM o activar roaming",done:false,url:""},
+    {id:"c12",group:"Reservas",text:"Confirmar reservas de hotel",done:false,url:""},
+    {id:"c13",group:"Reservas",text:"Check-in online vuelo (24h antes)",done:false,url:""},
+    {id:"c14",group:"Reservas",text:"Wild Horse Adventure — reconfirmar",done:false,url:""},
+  ],
+};
+
+// ========== STATE ==========
+let allTrips=JSON.parse(localStorage.getItem("tp_v3")||"null")||[JSON.parse(JSON.stringify(DEMO))];
+let activeId=localStorage.getItem("tp_aid_v3")||allTrips[0].id;
+let scriptUrl=localStorage.getItem("tp_scripturl")||"https://script.google.com/macros/s/AKfycbwCHcRYieNHfSISboLMUB5v14mGOk2hesnhRSrv-FLLBF-VdbPl_Y4m_pjtjGq24fQn/exec";
+let syncStatus="off"; // off | ok | err | pending | syncing
+let lastSync=localStorage.getItem("tp_lastsync")||"";
+let selDay=null;
+let activeTab="itinerary";
+let addingEv=false,addingBu=false,addingCk=false;
+let newEv={day:"",time:"09:00",title:"",cat:"activity",location:"",note:"",cost:"",url:""};
+let newBu={cat:"flights",desc:"",usd:"",cancel:"",url:""};
+let newCk={group:"",text:"",url:""};
+let showWiz=false,wizStep=1;
+let wizData={name:"",destination:"",startDate:"",endDate:"",travelers:"",exchangeRate:"1.08"};
+let showSync=false;
+let syncTestMsg="";
+
+function getTrip(){return allTrips.find(t=>t.id===activeId)||allTrips[0];}
+function save(){localStorage.setItem("tp_v3",JSON.stringify(allTrips));localStorage.setItem("tp_aid_v3",activeId);}
+function getDays(s,e){const d=[];let c=new Date(s+"T00:00:00"),en=new Date(e+"T00:00:00");while(c<=en){d.push(c.toISOString().split("T")[0]);c.setDate(c.getDate()+1);}return d;}
+function fmt(d,opts){try{return new Date(d+"T00:00:00").toLocaleDateString("es-ES",opts);}catch{return d||"";}}
+function fS(d){const dt=new Date(d+"T00:00:00");return{d:dt.getDate(),wd:dt.toLocaleDateString("es-ES",{weekday:"short"}),mo:dt.toLocaleDateString("es-ES",{month:"short"})};}
+function nf(n,dec=0){return(+n||0).toLocaleString("es-ES",{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function uid(){return"id"+Date.now()+Math.random().toString(36).slice(2,5);}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function isUrl(s){try{const u=new URL(s);return u.protocol==="http:"||u.protocol==="https:";}catch{return false;}}
+function urlHost(s){try{return new URL(s).hostname.replace(/^www\./,"");}catch{return"Enlace";}}
+function toast(msg,dur=2500){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),dur);}
+
+// ========== SHEETS SYNC ==========
+async function sheetsRequest(method,body){
+  if(!scriptUrl)throw new Error("Sin URL configurada");
+  const opts={method,headers:{"Content-Type":"application/json"}};
+  if(body)opts.body=JSON.stringify(body);
+  const res=await fetch(scriptUrl,opts);
+  if(!res.ok)throw new Error("HTTP "+res.status);
+  return await res.json();
+}
+
+async function syncPull(){
+  if(!scriptUrl)return;
+  syncStatus="pending";render();
+  try{
+    const data=await sheetsRequest("GET");
+    if(!data.ok)throw new Error(data.error||"Error desconocido");
+    const trip=getTrip();
+    const rows=data.rows||[];
+    if(rows.length){
+      trip.events=rows.filter(r=>r.type==="event").map(r=>({id:r.id,day:r.day||"",time:r.time||"",title:r.title||"",cat:r.cat||"other",location:r.location||"",note:r.note||"",cost:parseFloat(r.cost)||0,url:r.url||""}));
+      trip.budget=rows.filter(r=>r.type==="budget").map(r=>({id:r.id,cat:r.cat||"other",desc:r.desc||"",usd:parseFloat(r.usd)||0,cancel:r.cancel||"",url:r.cancel_url||r.url||""}));
+      trip.checklist=rows.filter(r=>r.type==="checklist").map(r=>({id:r.id,group:r.group||"General",text:r.title||r.desc||"",done:r.done==="TRUE"||r.done===true||r.done==="true",url:r.url||""}));
+      save();
+    }
+    syncStatus="ok";lastSync=new Date().toLocaleTimeString("es-ES");localStorage.setItem("tp_lastsync",lastSync);
+    toast("✓ Sincronizado con Google Sheets");
+  }catch(err){
+    syncStatus="err";
+    toast("✗ Error al sincronizar: "+err.message,3500);
+  }
+  render();
+}
+
+async function syncPush(){
+  if(!scriptUrl)return;
+  syncStatus="pending";render();
+  try{
+    const trip=getTrip();
+    const records=[
+      ...trip.events.map(e=>({...e,type:"event"})),
+      ...trip.budget.map(b=>({...b,type:"budget",cancel_url:b.url})),
+      ...trip.checklist.map(c=>({...c,type:"checklist",title:c.text})),
+    ];
+    const data=await sheetsRequest("POST",{action:"sync_all",records});
+    if(!data.ok)throw new Error(data.error||"Error desconocido");
+    syncStatus="ok";lastSync=new Date().toLocaleTimeString("es-ES");localStorage.setItem("tp_lastsync",lastSync);
+    toast("✓ Enviado a Google Sheets ("+records.length+" filas)");
+  }catch(err){
+    syncStatus="err";
+    toast("✗ Error al enviar: "+err.message,3500);
+  }
+  render();
+}
+
+async function upsertRecord(rec){
+  if(!scriptUrl)return;
+  try{await sheetsRequest("POST",{action:"upsert",record:rec});syncStatus="ok";}
+  catch(err){syncStatus="err";}
+}
+async function deleteRecord(id){
+  if(!scriptUrl)return;
+  try{await sheetsRequest("POST",{action:"delete",id});}
+  catch{}
+}
+
+async function testConnection(){
+  syncTestMsg="Probando conexión...";render();
+  try{
+    const d=await sheetsRequest("POST",{action:"ping"});
+    syncTestMsg=d.ok?"✅ Conexión correcta. ¡Listo para sincronizar!":"❌ Respuesta inesperada del script.";
+  }catch(err){
+    syncTestMsg="❌ Error: "+err.message;
+  }
+  render();
+}
+
+// ========== RENDER ==========
+function render(){
+  const trip=getTrip();
+  if(!selDay||!getDays(trip.startDate,trip.endDate).includes(selDay))selDay=trip.startDate;
+  const days=getDays(trip.startDate,trip.endDate);
+  const dayEvs=trip.events.filter(e=>e.day===selDay).sort((a,b)=>a.time.localeCompare(b.time));
+  const totalUSD=trip.budget.reduce((s,b)=>s+(+b.usd||0),0);
+  const totalEUR=totalUSD/trip.exchangeRate;
+  const byBCat=Object.keys(BCAT).reduce((a,c)=>{a[c]=trip.budget.filter(b=>b.cat===c);return a},{});
+  const ckDone=trip.checklist.filter(c=>c.done).length;
+  const pct=trip.checklist.length?Math.round(ckDone/trip.checklist.length*100):0;
+  const ckGroups=[...new Set(trip.checklist.map(c=>c.group))];
+  const today=new Date();today.setHours(0,0,0,0);
+  const tripStart=new Date(trip.startDate+"T00:00:00");
+  const daysLeft=Math.ceil((tripStart-today)/86400000);
+
+  const syncBadge=()=>{
+    if(syncStatus==="ok")return`<span class="sync-badge sync-ok"><span class="sync-dot"></span>Sheets · ${lastSync}</span>`;
+    if(syncStatus==="err")return`<span class="sync-badge sync-err"><span class="sync-dot"></span>Error sync</span>`;
+    if(syncStatus==="pending")return`<span class="sync-badge sync-pending"><span class="sync-dot"></span>Sincronizando...</span>`;
+    if(!scriptUrl)return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sin sincronizar</span>`;
+    return`<span class="sync-badge sync-off"><span class="sync-dot"></span>Sheets desconectado</span>`;
+  };
+
+  let html=`
+  <div class="nav">
+    <div class="nav-left">
+      <span class="logo">✈ TRAVEL PLANNER</span>
+      <select class="project-select" onchange="switchTrip(this.value)">
+        ${allTrips.map(t=>`<option value="${t.id}" ${t.id===activeId?"selected":""}>${esc(t.name)}</option>`).join("")}
+      </select>
+      ${syncBadge()}
+    </div>
+    <div class="nav-right">
+      ${scriptUrl?`<button class="btn ghost sm" onclick="syncPull()">↓ Pull</button><button class="btn ghost sm" onclick="syncPush()">↑ Push</button>`:""}
+      <button class="btn" onclick="openSync()">⚙ Google Sheets</button>
+      <button class="btn primary" onclick="openWiz()">+ Nuevo viaje</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="trip-dest">${esc(trip.destination)}</div>
+        <div class="trip-name">${esc(trip.name)}</div>
+        <div class="trip-meta">${fmt(trip.startDate,{day:"numeric",month:"long"})} — ${fmt(trip.endDate,{day:"numeric",month:"long",year:"numeric"})} &nbsp;·&nbsp; ${days.length} días &nbsp;·&nbsp; ${trip.travelers.length} viajero${trip.travelers.length!==1?"s":""}</div>
+      </div>
+      <div class="countdown">
+        <div class="countdown-num">${daysLeft>0?daysLeft:daysLeft===0?"HOY":"✈"}</div>
+        <div class="countdown-label">${daysLeft>0?"días para el viaje":daysLeft===0?"el viaje es hoy":"en curso / pasado"}</div>
+      </div>
+    </div>
+    <div class="travelers">${trip.travelers.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="sc"><div class="sc-label">Total presupuesto</div><div class="sc-num">$${nf(totalUSD)}</div><div class="sc-sub">€${nf(totalEUR)}</div></div>
+    <div class="sc"><div class="sc-label">Por persona</div><div class="sc-num">$${nf(totalUSD/Math.max(1,trip.travelers.length))}</div><div class="sc-sub">${trip.travelers.length} viajero${trip.travelers.length!==1?"s":""}</div></div>
+    <div class="sc"><div class="sc-label">Checklist</div><div class="sc-num">${ckDone}/${trip.checklist.length}</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab ${activeTab==="itinerary"?"active":""}" onclick="switchTab('itinerary')">Itinerario</button>
+    <button class="tab ${activeTab==="budget"?"active":""}" onclick="switchTab('budget')">Presupuesto</button>
+    <button class="tab ${activeTab==="checklist"?"active":""}" onclick="switchTab('checklist')">Checklist</button>
+  </div>
+  `;
+
+  if(activeTab==="itinerary") html+=renderItinerary(days,dayEvs,trip);
+  if(activeTab==="budget") html+=renderBudget(byBCat,totalUSD,totalEUR,trip);
+  if(activeTab==="checklist") html+=renderChecklist(ckDone,trip.checklist.length,pct,ckGroups,trip);
+  if(showWiz) html+=renderWizard();
+  if(showSync) html+=renderSyncModal();
+
+  document.getElementById("app").innerHTML=html;
+}
+
+/* --- ITINERARY --- */
+function renderItinerary(days,dayEvs,trip){
+  return`
+  <div class="day-picker">
+    ${days.map(d=>{const{d:dd,wd,mo}=fS(d);const has=trip.events.some(e=>e.day===d);const sel=selDay===d;
+      return`<button class="day-btn ${sel?"active":""}" onclick="pickDay('${d}')">
+        <div class="wd">${wd}</div><div class="dd">${dd}</div><div class="mo">${mo}</div>
+        ${has?`<div class="day-dot"></div>`:""}
+      </button>`;
+    }).join("")}
+  </div>
+  <div class="sh">
+    <div style="font-size:14px;font-weight:500;text-transform:capitalize">${fmt(selDay,{weekday:"long",day:"numeric",month:"long"})}</div>
+    <button class="btn ${addingEv?"primary":""} sm" onclick="toggleAddEv()">${addingEv?"✕ Cancelar":"+ Evento"}</button>
+  </div>
+  ${addingEv?`<div class="form-box">
+    <div class="fg">
+      <div class="ff"><label class="fl">Título *</label><input id="nev-t" value="${esc(newEv.title)}" oninput="newEv.title=this.value" placeholder="Nombre del evento"></div>
+      <div><label class="fl">Categoría</label><select onchange="newEv.cat=this.value">${Object.entries(CAT).map(([k,v])=>`<option value="${k}" ${newEv.cat===k?"selected":""}>${v.label}</option>`).join("")}</select></div>
+      <div><label class="fl">Hora</label><input type="time" value="${esc(newEv.time)}" oninput="newEv.time=this.value"></div>
+      <div><label class="fl">Fecha</label><input type="date" value="${esc(newEv.day||selDay)}" min="${trip.startDate}" max="${trip.endDate}" oninput="newEv.day=this.value"></div>
+      <div><label class="fl">Coste (USD)</label><input type="number" value="${esc(newEv.cost)}" oninput="newEv.cost=this.value" placeholder="0"></div>
+      <div><label class="fl">Lugar</label><input value="${esc(newEv.location)}" oninput="newEv.location=this.value" placeholder="Ubicación"></div>
+      <div class="ff"><label class="fl">URL — boarding pass, voucher, reserva...</label><input type="url" value="${esc(newEv.url)}" oninput="newEv.url=this.value" placeholder="https://"></div>
+      <div class="ff"><label class="fl">Notas</label><textarea oninput="newEv.note=this.value" rows="2" placeholder="Instrucciones, detalles...">${esc(newEv.note)}</textarea></div>
+    </div>
+    <div class="fa"><button class="btn primary" onclick="addEvent()">Guardar</button><button class="btn" onclick="toggleAddEv()">Cancelar</button></div>
+  </div>`:""}
+  <div class="ev-list">
+    ${dayEvs.length===0?`<div class="empty">Sin eventos este día<br><span style="font-size:12px;color:var(--faint)">Pulsa "+ Evento" para añadir uno</span></div>`:
+    dayEvs.map(ev=>{const cfg=CAT[ev.cat]||CAT.other;return`
+      <div class="ev">
+        <div class="ev-time">${esc(ev.time)}</div>
+        <div class="ev-bar" style="background:${cfg.bg}"></div>
+        <div class="ev-body">
+          <div class="ev-title">${esc(ev.title)}</div>
+          ${ev.location?`<div class="ev-loc">📍 ${esc(ev.location)}</div>`:""}
+          ${ev.note?`<div class="ev-note">${esc(ev.note)}</div>`:""}
+          ${isUrl(ev.url)?`<a class="pill-link" href="${esc(ev.url)}" target="_blank">🔗 ${urlHost(ev.url)}</a>`:""}
+        </div>
+        <div class="ev-right">
+          <span class="badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</span>
+          ${(+ev.cost)>0?`<span class="ev-cost">$${nf(+ev.cost)}</span>`:""}
+          <button class="btn danger" onclick="delEvent('${ev.id}')">Eliminar</button>
+        </div>
+      </div>`;}).join("")}
+  </div>`;
+}
+
+/* --- BUDGET --- */
+function renderBudget(byBCat,totalUSD,totalEUR,trip){
+  return`
+  <div class="rate-row">
+    <label style="font-size:12px;color:var(--muted)">Cambio USD → EUR:</label>
+    <input type="number" step="0.01" value="${trip.exchangeRate}" style="width:80px" oninput="updateRate(this.value)">
+    <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">€1 = $${(+trip.exchangeRate).toFixed(3)}</span>
+  </div>
+  <div class="bsum">
+    ${Object.entries(BCAT).map(([cat,label])=>{
+      const items=byBCat[cat];const total=items.reduce((s,b)=>s+(+b.usd||0),0);
+      if(!items.length)return"";
+      return`<div class="bc" style="border-left-color:${BCAT_C[cat]}">
+        <div><div class="bc-name">${label}</div><div class="bc-count">${items.length} partida${items.length!==1?"s":""}</div></div>
+        <div><div class="bc-usd">$${nf(total)}</div><div class="bc-eur">€${nf(total/trip.exchangeRate)}</div></div>
+      </div>`;
+    }).join("")}
+  </div>
+  <div class="sh">
+    <span class="sh-title">Partidas de gasto</span>
+    <button class="btn ${addingBu?"primary":""} sm" onclick="toggleAddBu()">${addingBu?"✕ Cancelar":"+ Partida"}</button>
+  </div>
+  ${addingBu?`<div class="form-box">
+    <div class="fg">
+      <div class="ff"><label class="fl">Descripción *</label><input id="nbu-d" value="${esc(newBu.desc)}" oninput="newBu.desc=this.value" placeholder="Nombre de la partida"></div>
+      <div><label class="fl">Categoría</label><select onchange="newBu.cat=this.value">${Object.entries(BCAT).map(([k,v])=>`<option value="${k}" ${newBu.cat===k?"selected":""}>${v}</option>`).join("")}</select></div>
+      <div><label class="fl">Importe USD</label><input type="number" value="${esc(newBu.usd)}" oninput="newBu.usd=this.value" placeholder="0"></div>
+      <div><label class="fl">Cancelación gratuita hasta</label><input type="date" value="${esc(newBu.cancel)}" oninput="newBu.cancel=this.value"></div>
+      <div class="ff"><label class="fl">URL — confirmación, voucher, booking...</label><input type="url" value="${esc(newBu.url)}" oninput="newBu.url=this.value" placeholder="https://"></div>
+    </div>
+    <div class="fa"><button class="btn primary" onclick="addBudget()">Guardar</button><button class="btn" onclick="toggleAddBu()">Cancelar</button></div>
+  </div>`:""}
+  ${Object.entries(BCAT).map(([cat,label])=>{
+    const items=byBCat[cat];if(!items.length)return"";
+    return`<div class="bgt">${label}</div>
+    ${items.map(b=>`<div class="bi" style="border-left-color:${BCAT_C[cat]}">
+      <div style="flex:1;min-width:0">
+        <div class="bi-desc">${esc(b.desc)}</div>
+        ${b.cancel?`<div class="bi-cancel">Cancelación gratuita hasta ${fmt(b.cancel,{day:"numeric",month:"short",year:"numeric"})}</div>`:""}
+        ${isUrl(b.url)?`<a class="pill-link" href="${esc(b.url)}" target="_blank">🔗 ${urlHost(b.url)}</a>`:""}
+      </div>
+      <div class="bi-amt"><div class="bi-usd">$${nf(+b.usd,2)}</div><div class="bi-eur">€${nf((+b.usd)/trip.exchangeRate)}</div></div>
+      <button class="btn danger" onclick="delBudget('${b.id}')">✕</button>
+    </div>`).join("")}`;
+  }).join("")}
+  <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:14px;font-weight:500">Total viaje</div>
+    <div style="text-align:right">
+      <div style="font-size:24px;font-weight:600;font-family:'DM Mono',monospace">$${nf(totalUSD,2)}</div>
+      <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">€${nf(totalEUR)}</div>
+    </div>
+  </div>`;
+}
+
+/* --- CHECKLIST --- */
+function renderChecklist(ckDone,ckTotal,pct,ckGroups,trip){
+  return`
+  <div style="margin-bottom:1.25rem">
+    <div class="ck-pt"><span>Preparación del viaje</span><span>${ckDone}/${ckTotal} · ${pct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+  <div class="sh">
+    <span class="sh-title">Lista de comprobación</span>
+    <button class="btn ${addingCk?"primary":""} sm" onclick="toggleAddCk()">${addingCk?"✕ Cancelar":"+ Añadir"}</button>
+  </div>
+  ${addingCk?`<div class="form-box">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      <div><label class="fl">Elemento *</label><input id="nck-t" value="${esc(newCk.text)}" oninput="newCk.text=this.value" placeholder="Qué hay que hacer o llevar"></div>
+      <div><label class="fl">Grupo</label><input value="${esc(newCk.group)}" oninput="newCk.group=this.value" placeholder="Pasaportes, Equipaje, Reservas..."></div>
+      <div><label class="fl">URL — enlace a reserva, documento, web...</label><input type="url" value="${esc(newCk.url)}" oninput="newCk.url=this.value" placeholder="https://"></div>
+    </div>
+    <div class="fa"><button class="btn primary" onclick="addCk()">Guardar</button><button class="btn" onclick="toggleAddCk()">Cancelar</button></div>
+  </div>`:""}
+  ${ckGroups.map(group=>{
+    const items=trip.checklist.filter(c=>c.group===group);
+    const gd=items.filter(c=>c.done).length;
+    return`<div class="ck-g">
+      <div class="ck-gt"><span>${esc(group)}</span><span>${gd}/${items.length}</span></div>
+      ${items.map(item=>`<div class="ck-i">
+        <input type="checkbox" ${item.done?"checked":""} onchange="toggleCk('${item.id}')">
+        <div style="flex:1;min-width:0">
+          <div class="ck-text ${item.done?"ck-done":""}">${esc(item.text)}</div>
+          ${isUrl(item.url)?`<a class="pill-link" style="margin-top:2px" href="${esc(item.url)}" target="_blank">🔗 ${urlHost(item.url)}</a>`:""}
+        </div>
+        <button class="btn danger" onclick="delCk('${item.id}')">✕</button>
+      </div>`).join("")}
+    </div>`;
+  }).join("")}`;
+}
+
+/* --- WIZARD --- */
+function renderWizard(){
+  const steps=["Destino","Fechas","Viajeros"];
+  const dots=steps.map((_,i)=>`<div class="wiz-dot ${i<wizStep?"done":""}"></div>`).join("");
+  let body="";
+  if(wizStep===1)body=`
+    <div class="wiz-label">Paso 1 de 3 — Destino</div>
+    <div class="field-group"><label class="fl">Nombre del viaje *</label><input id="wn" value="${esc(wizData.name)}" oninput="wizData.name=this.value" placeholder="Verano · Japón 2026"></div>
+    <div class="field-group"><label class="fl">Destino principal *</label><input id="wd" value="${esc(wizData.destination)}" oninput="wizData.destination=this.value" placeholder="Tokio, Japón"></div>`;
+  if(wizStep===2)body=`
+    <div class="wiz-label">Paso 2 de 3 — Fechas</div>
+    <div class="fg" style="margin-bottom:0">
+      <div><label class="fl">Fecha de salida *</label><input type="date" id="ws" value="${esc(wizData.startDate)}" oninput="wizData.startDate=this.value"></div>
+      <div><label class="fl">Fecha de vuelta *</label><input type="date" id="we" value="${esc(wizData.endDate)}" oninput="wizData.endDate=this.value"></div>
+      <div><label class="fl">Tipo de cambio USD/EUR</label><input type="number" step="0.01" value="${esc(wizData.exchangeRate)}" oninput="wizData.exchangeRate=this.value"></div>
+    </div>`;
+  if(wizStep===3)body=`
+    <div class="wiz-label">Paso 3 de 3 — Viajeros</div>
+    <div class="field-group"><label class="fl">Un nombre por línea</label><textarea id="wt" oninput="wizData.travelers=this.value" rows="4" placeholder="Ana García\nPedro García\nLucia García">${esc(wizData.travelers)}</textarea></div>
+    <div style="font-size:12px;color:var(--muted);background:var(--surface2);padding:.75rem 1rem;border-radius:var(--rs)">El planificador se creará vacío y listo para añadir eventos, presupuesto y checklist.</div>`;
+  if(wizStep===4)body=`
+    <div style="text-align:center;padding:1.5rem 0">
+      <div style="font-size:40px;margin-bottom:.875rem">✈</div>
+      <div style="font-size:17px;font-weight:600;margin-bottom:.5rem">¡Proyecto creado!</div>
+      <div style="font-size:13px;color:var(--muted)">"${esc(wizData.name)}" ya aparece en el selector.</div>
+    </div>`;
+  const footer=wizStep<4
+    ?`<div class="modal-footer"><button class="btn" onclick="wizBack()">${wizStep>1?"← Atrás":"Cancelar"}</button><button class="btn primary" onclick="wizNext()">${wizStep===3?"Crear proyecto ✓":"Siguiente →"}</button></div>`
+    :`<div class="modal-footer"><div></div><button class="btn primary" onclick="closeWiz()">Ir al proyecto →</button></div>`;
+  return`<div class="overlay" onclick="if(event.target===this&&${wizStep<4})closeWiz()"><div class="modal">
+    <div class="modal-title">Nuevo proyecto de viaje</div>
+    <div class="modal-sub">Crea tu planificador en 3 pasos sencillos</div>
+    <div class="wiz-progress">${dots}</div>
+    ${body}${footer}
+  </div></div>`;
+}
+
+/* --- SYNC MODAL --- */
+function renderSyncModal(){
+  return`<div class="overlay" onclick="if(event.target===this)closeSync()"><div class="modal" style="max-width:580px">
+    <div class="modal-title">Conectar con Google Sheets</div>
+    <div class="modal-sub">Sincronización bidireccional automática. Los datos del planificador se leen y escriben en tu hoja.</div>
+
+    <div class="sync-step">
+      <div class="sync-step-num">Paso 1</div>
+      <div class="sync-step-title">Instala el Apps Script en tu Google Sheet</div>
+      <div class="sync-step-desc">Abre tu Google Sheet → <strong>Extensiones → Apps Script</strong> → Pega el código del archivo <code>TravelPlanner_AppsScript.gs</code> → Guarda → <strong>Implementar → Nueva implementación</strong> (tipo: Aplicación web, acceso: Cualquiera).</div>
+    </div>
+    <div class="sync-step">
+      <div class="sync-step-num">Paso 2</div>
+      <div class="sync-step-title">Pega aquí la URL de tu implementación</div>
+      <div class="sync-step-desc">Después de implementar, Google te da una URL del tipo <code>https://script.google.com/macros/s/...</code></div>
+      <div class="sync-url-row">
+        <input id="script-url-input" type="url" value="${esc(scriptUrl)}" placeholder="https://script.google.com/macros/s/..." oninput="scriptUrl=this.value;localStorage.setItem('tp_scripturl',scriptUrl)">
+        <button class="btn primary" onclick="testConnection()">Probar</button>
+      </div>
+      ${syncTestMsg?`<div class="sync-status-row">${syncTestMsg}</div>`:""}
+    </div>
+    <div class="sync-step">
+      <div class="sync-step-num">Paso 3</div>
+      <div class="sync-step-title">Sincroniza cuando quieras</div>
+      <div class="sync-step-desc">Usa los botones <strong>↓ Pull</strong> (importar desde Sheets) y <strong>↑ Push</strong> (exportar al Sheet) que aparecerán en la barra superior. Los datos se sincronizan al instante.</div>
+      <div class="sync-url-row">
+        <button class="btn" onclick="syncPull();closeSync()">↓ Pull ahora (Sheets → App)</button>
+        <button class="btn primary" onclick="syncPush();closeSync()">↑ Push ahora (App → Sheets)</button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <div style="font-size:11px;color:var(--muted)">Los datos se almacenan también localmente en el navegador.</div>
+      <button class="btn" onclick="closeSync()">Cerrar</button>
+    </div>
+  </div></div>`;
+}
+
+// ========== ACTIONS ==========
+window.switchTab=function(t){activeTab=t;addingEv=addingBu=addingCk=false;render();}
+window.pickDay=function(d){selDay=d;newEv.day=d;render();}
+window.switchTrip=function(id){activeId=id;selDay=null;activeTab="itinerary";save();render();}
+
+window.toggleAddEv=function(){addingEv=!addingEv;if(addingEv)newEv={day:selDay,time:"09:00",title:"",cat:"activity",location:"",note:"",cost:"",url:""};render();}
+window.toggleAddBu=function(){addingBu=!addingBu;if(addingBu)newBu={cat:"flights",desc:"",usd:"",cancel:"",url:""};render();}
+window.toggleAddCk=function(){addingCk=!addingCk;if(addingCk)newCk={group:"",text:"",url:""};render();}
+
+window.addEvent=function(){
+  const tf=document.getElementById("nev-t");if(tf)newEv.title=tf.value;
+  if(!newEv.title)return;
+  const trip=getTrip();
+  const ev={...newEv,id:uid(),cost:parseFloat(newEv.cost)||0,day:newEv.day||selDay,type:"event"};
+  trip.events.push(ev);trip.events.sort((a,b)=>(a.day+a.time).localeCompare(b.day+b.time));
+  addingEv=false;save();upsertRecord(ev);render();toast("Evento añadido");
+};
+window.delEvent=function(id){if(confirm("¿Eliminar este evento?")){const t=getTrip();t.events=t.events.filter(e=>e.id!==id);save();deleteRecord(id);render();toast("Evento eliminado");}};
+
+window.addBudget=function(){
+  const df=document.getElementById("nbu-d");if(df)newBu.desc=df.value;
+  if(!newBu.desc)return;
+  const trip=getTrip();
+  const item={...newBu,id:uid(),usd:parseFloat(newBu.usd)||0,type:"budget"};
+  trip.budget.push(item);addingBu=false;save();upsertRecord(item);render();toast("Partida añadida");
+};
+window.delBudget=function(id){if(confirm("¿Eliminar esta partida?")){const t=getTrip();t.budget=t.budget.filter(b=>b.id!==id);save();deleteRecord(id);render();toast("Partida eliminada");}};
+
+window.toggleCk=function(id){
+  const t=getTrip();t.checklist=t.checklist.map(c=>c.id===id?{...c,done:!c.done}:c);
+  save();const item=t.checklist.find(c=>c.id===id);if(item)upsertRecord({...item,type:"checklist",title:item.text});render();
+};
+window.delCk=function(id){if(confirm("¿Eliminar este elemento?")){const t=getTrip();t.checklist=t.checklist.filter(c=>c.id!==id);save();deleteRecord(id);render();}};
+window.addCk=function(){
+  const tf=document.getElementById("nck-t");if(tf)newCk.text=tf.value;
+  if(!newCk.text)return;
+  const trip=getTrip();
+  const item={...newCk,id:uid(),done:false,group:newCk.group||"General",type:"checklist",title:newCk.text};
+  trip.checklist.push(item);addingCk=false;save();upsertRecord(item);render();toast("Elemento añadido");
+};
+window.updateRate=function(v){const t=getTrip();t.exchangeRate=parseFloat(v)||1.08;save();render();};
+
+// WIZARD
+window.openWiz=function(){showWiz=true;wizStep=1;wizData={name:"",destination:"",startDate:"",endDate:"",travelers:"",exchangeRate:"1.08"};render();}
+window.closeWiz=function(){showWiz=false;render();}
+window.wizNext=function(){
+  if(wizStep===1){
+    const n=document.getElementById("wn"),d=document.getElementById("wd");
+    if(n)wizData.name=n.value;if(d)wizData.destination=d.value;
+    if(!wizData.name||!wizData.destination){toast("Rellena el nombre y el destino",2500);return;}
+  }
+  if(wizStep===2){
+    const s=document.getElementById("ws"),e=document.getElementById("we");
+    if(s)wizData.startDate=s.value;if(e)wizData.endDate=e.value;
+    if(!wizData.startDate||!wizData.endDate){toast("Elige las fechas de salida y vuelta",2500);return;}
+    if(wizData.startDate>wizData.endDate){toast("La salida debe ser antes que la vuelta",2500);return;}
+  }
+  if(wizStep===3){
+    const tv=document.getElementById("wt");if(tv)wizData.travelers=tv.value;
+    const tList=(wizData.travelers||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    allTrips.push({id:uid(),name:wizData.name,destination:wizData.destination,startDate:wizData.startDate,endDate:wizData.endDate,exchangeRate:parseFloat(wizData.exchangeRate)||1.08,travelers:tList.length?tList:["Viajero"],events:[],budget:[],checklist:[]});
+    activeId=allTrips[allTrips.length-1].id;selDay=allTrips[allTrips.length-1].startDate;activeTab="itinerary";save();
+  }
+  wizStep++;render();
+}
+window.wizBack=function(){wizStep>1?wizStep--:closeWiz();render();}
+
+// SYNC
+window.openSync=function(){showSync=true;syncTestMsg="";render();}
+window.closeSync=function(){showSync=false;render();}
+window.testConnection=function(){testConnection();}
+window.syncPull=function(){syncPull();}
+window.syncPush=function(){syncPush();}
+
+render();
+</script>
+
+<div id="pw-overlay" style="position:fixed;inset:0;background:#F6F4EF;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:1.5rem;font-family:'DM Sans',sans-serif">
+  <div style="text-align:center">
+    <div style="font-size:28px;margin-bottom:.5rem">✈</div>
+    <div style="font-size:18px;font-weight:600;color:#1A1816;margin-bottom:.25rem">Travel Planner</div>
+    <div style="font-size:13px;color:#6E6860">Introduce la contraseña para continuar</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="pw-input" type="password" placeholder="Contraseña" maxlength="20"
+      style="font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 16px;border:1px solid #DDD9D0;border-radius:8px;outline:none;width:200px;text-align:center;background:#fff;color:#1A1816"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;background:#1A1816;color:#fff;border:none;border-radius:8px;cursor:pointer">
+      Entrar
+    </button>
+  </div>
+  <div id="pw-err" style="font-size:12px;color:#B33030;display:none">Contraseña incorrecta</div>
+</div>
+<script>
+(function(){
+  if(sessionStorage.getItem("tp_auth")==="1"){
+    document.getElementById("pw-overlay").style.display="none";
+  }
+})();
+function checkPw(){
+  const v=document.getElementById("pw-input").value;
+  if(v==="0000"){
+    sessionStorage.setItem("tp_auth","1");
+    document.getElementById("pw-overlay").style.display="none";
+  } else {
+    document.getElementById("pw-err").style.display="block";
+    document.getElementById("pw-input").value="";
+    document.getElementById("pw-input").focus();
+  }
+}
+</script>
+
+</body>
+</html>
