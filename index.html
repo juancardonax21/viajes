@@ -425,7 +425,7 @@ function rHome(){
     var tPend=(t.budget||[]).reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
     var tPaid=(t.budget||[]).reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
     var tSym=t.csym||"$";
-    h+='<div class="tcard'+(dL<-1?" past":"")+'" onclick="openTrip(\''+t.id+'\')">';
+    h+='<div class="tcard'+(dL<-1?" past":"")+'" data-id="'+t.id+'" onclick="openTripEl(this)">';
     h+='<div class="tc-dest">'+esc(t.destination)+'</div>';
     h+='<div class="tc-name">'+esc(t.name)+'</div>';
     h+='<div class="tc-dates">'+fmt(t.startDate,{day:"numeric",month:"short"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"short",year:"numeric"})+'</div>';
@@ -675,6 +675,7 @@ function rmWT(i){wd.travelers.splice(i,1);render();}
 // ACTIONS
 function goHome(){actId=null;tab="itinerary";selDay=null;hlBuId=null;addEv=addBu=addCk=false;editEvId=editBuId=editCkId=null;showSet=false;clearTimeout(syncT);rHome();}
 function openTrip(id){actId=id;selDay=null;tab="itinerary";localStorage.setItem("tp7_id",id);render();}
+function openTripEl(el){var id=el.dataset?el.dataset.id:el.getAttribute("data-id");if(id)openTrip(id);}
 function setTab(v){tab=v;addEv=addBu=addCk=false;editEvId=editBuId=editCkId=null;render();}
 function pickDay(d){selDay=d;nEv.day=d;render();}
 function togEv(){addEv=!addEv;if(addEv){nEv=mkEv();}render();}
@@ -725,7 +726,7 @@ function wizNext(){
 }
 function wizBack(){wstep>1?wstep--:closeWiz();render();}
 
-var _g=[goHome,openTrip,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
+var _g=[goHome,openTrip,openTripEl,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
 window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
