@@ -346,28 +346,34 @@ function doSync(){
   });
 }
 function loadFromSheets(cb){
+  var done=false;
+  function finish(err){if(done)return;done=true;cb(err);}
+  // 6 second timeout — if Sheets doesn't respond, use local data
+  var timer=setTimeout(function(){finish("timeout");},6000);
   fetch(SCRIPT_URL+"?action=load&t="+Date.now())
   .then(function(r){return r.text();})
   .then(function(txt){
-    var d; try{d=JSON.parse(txt);}catch(e){cb("parse: "+txt.slice(0,60));return;}
+    clearTimeout(timer);
+    var d;
+    try{d=JSON.parse(txt);}catch(e){finish("parse error");return;}
     if(d.ok&&Array.isArray(d.trips)){
       var remote=d.trips.filter(function(t){return t.name&&t.startDate;});
       if(remote.length>0){
         var merged=trips.slice();
         remote.forEach(function(rt){
-          var idx=-1;
-          for(var i=0;i<merged.length;i++){if(merged[i].id===rt.id){idx=i;break;}}
-          if(idx>=0){merged[idx]=rt;}else{merged.push(rt);}
+          var found=false;
+          for(var i=0;i<merged.length;i++){if(merged[i].id===rt.id){merged[i]=rt;found=true;break;}}
+          if(!found)merged.push(rt);
         });
         trips=merged;
         localStorage.setItem("tp7_trips",JSON.stringify(trips));
       }
-      cb(null);
+      finish(null);
     } else {
-      cb(d.error||"empty");
+      finish(d.error||"empty");
     }
   })
-  .catch(function(err){cb(err.message);});
+  .catch(function(err){clearTimeout(timer);finish(err.message);});
 }
 function manualSync(){clearTimeout(syncT);doSync();}
 
@@ -741,28 +747,27 @@ if(trips.length===0){
   localStorage.setItem("tp7_trips",JSON.stringify(trips));
   actId=null;
 }
+trips=trips.filter(function(t){return t.name&&t.startDate;});
+if(trips.length===0){trips=[JSON.parse(JSON.stringify(DEMO))];localStorage.setItem("tp7_trips",JSON.stringify(trips));actId=null;}
 if(actId&&!trips.find(function(t){return t.id===actId;}))actId=null;
+// Render immediately with local data — don't block on network
+if(actId)render();else rHome();
+// Then sync in background
 if(SCRIPT_URL){
-  syncSt="syncing";
+  syncSt="pending";
   loadFromSheets(function(err){
-    // After load, again filter out invalid trips
     trips=trips.filter(function(t){return t.name&&t.startDate;});
-    if(trips.length===0){
-      trips=[JSON.parse(JSON.stringify(DEMO))];
-      localStorage.setItem("tp7_trips",JSON.stringify(trips));
-    }
+    if(trips.length===0){trips=[JSON.parse(JSON.stringify(DEMO))];localStorage.setItem("tp7_trips",JSON.stringify(trips));}
     if(!err){
-      syncSt="ok"; lastSync=new Date().toLocaleTimeString("es-ES");
+      syncSt="ok";lastSync=new Date().toLocaleTimeString("es-ES");
       localStorage.setItem("tp7_ls",lastSync);
     } else {
-      syncSt=(err==="empty")?"idle":"err";
-      syncErr=err==="empty"?"":err;
+      syncSt=(err==="timeout"||err==="empty")?"idle":"err";
+      syncErr=(err==="timeout"||err==="empty")?"":err;
     }
     if(actId&&!trips.find(function(t){return t.id===actId;}))actId=null;
     if(actId)render();else rHome();
   });
-}else{
-  if(actId)render();else rHome();
 }
 </script>
 <div id="pw-overlay" style="position:fixed;inset:0;background:#F6F4EF;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:1.5rem;font-family:'DM Sans',sans-serif">
