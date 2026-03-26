@@ -210,6 +210,26 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--tx
 /* Budget doc counter */
 .bi-docs{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--purple);background:#ECEAFC;padding:1px 7px;border-radius:100px;border:1px solid #C5BFF5;cursor:pointer;margin-top:3px}
 .bi-docs:hover{opacity:.8}
+
+/* WEATHER */
+.weather-bar{display:flex;align-items:center;gap:10px;padding:.5rem .875rem;background:var(--bluebg);border:1px solid #C5D9F2;border-radius:var(--rs);margin-bottom:.75rem;flex-wrap:wrap}
+.weather-icon{font-size:22px;flex-shrink:0}
+.weather-temp{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:var(--blue)}
+.weather-desc{font-size:12px;color:var(--mu);flex:1}
+.weather-detail{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.weather-key-row{display:flex;gap:8px;align-items:center;margin-bottom:.75rem;flex-wrap:wrap}
+/* DAY NOTES */
+.day-notes{background:var(--amberbg);border:1px solid #F5DBA0;border-radius:var(--rs);padding:.625rem .875rem;margin-bottom:.75rem}
+.day-notes textarea{background:transparent;border:none;font-size:13px;color:var(--tx);padding:0;resize:none;min-height:40px;font-family:'DM Sans',sans-serif}
+.day-notes textarea:focus{outline:none;border:none}
+.day-notes-label{font-size:10px;color:var(--amber);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+/* OFFLINE BADGE */
+.offline-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:100px;background:var(--redbg);color:var(--red);border:1px solid #F5C0C0;font-family:'DM Mono',monospace}
+/* LINKED MINI */
+.lnk-mini{display:flex;align-items:center;gap:6px;padding:.375rem .625rem;background:var(--surf2);border-radius:var(--rs);margin-top:5px;font-size:12px;cursor:pointer;border:1px solid var(--brd)}
+.lnk-mini:hover{border-color:var(--brd2)}
+.lnk-mini-name{flex:1;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnk-mini-arrow{color:var(--mu);font-size:11px;flex-shrink:0}
 @media(max-width:620px){.sgrid,.bsum{grid-template-columns:1fr 1fr}.fg{grid-template-columns:1fr}.hdr-top,.nav{flex-direction:column}.cdown{text-align:left}.tgrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -296,6 +316,7 @@ var wiz=false,wstep=1,wd={name:"",destination:"",startDate:"",endDate:"",currenc
 var showSet=false,setBuf={},openTvIdx=-1;
 var syncT=null,syncSt="idle",syncErr="",lastSync=localStorage.getItem("tp7_ls")||"";
 var showAlt=false,rateLoading=false,openTvIdx=-1,editDocId=null,addDoc=false;
+var weatherCache={},weatherApiKey=localStorage.getItem("owm_key")||"e58f8a6efa887e38af35c05014efffe6",isOffline=false,editingNoteDay=null;
 var nDoc={cat:"vuelos",name:"",expiry:"",url:"",budgetId:"",note:""};
 
 function T(){return trips.find(function(t){return t.id===actId;})||null;}
@@ -449,8 +470,9 @@ function render(){
   else if(syncSt==="ok")sh='<span class="sync-lbl sync-ok">&#10003; '+esc(lastSync)+'</span>';
   else if(syncSt==="err")sh='<span class="sync-lbl sync-err" title="'+esc(syncErr)+'">&#10007; Error &mdash; <button class="btn sml" style="color:var(--red);border-color:var(--red);padding:2px 8px;font-size:11px" onclick="manualSync()">Reintentar</button></span>';
   var h="";
+  var offBadge=isOffline?'<span class="offline-badge">&#9889; Sin conexión</span>':'';
   var ctog='<div class="curr-toggle"><button class="curr-btn'+(showAlt?'':' on')+'" onclick="setShowAlt(false)">'+esc(t.csym||'$')+'</button><button class="curr-btn'+(showAlt?' on':'')+'" onclick="setShowAlt(true)">'+esc(t.exBase||'EUR')+'</button></div>';
-h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+sh+ctog+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
+h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+offBadge+sh+ctog+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
   h+='<div class="hdr"><div class="hdr-top"><div><div class="dest-lbl">'+esc(t.destination)+'</div><div class="trip-name">'+esc(t.name)+'</div><div class="trip-meta">'+fmt(t.startDate,{day:"numeric",month:"long"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"long",year:"numeric"})+'&nbsp;&middot;&nbsp;'+dd.length+' d&iacute;as&nbsp;&middot;&nbsp;'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="cdown"><div class="cdown-n">'+(dL>0?dL:dL===0?"HOY":"&#9992;")+'</div><div class="cdown-l">'+(dL>0?"d&iacute;as":dL===0?"Hoy":"En curso")+'</div></div></div>';
   h+='<div class="travelers">';t.travelers.forEach(function(v){h+='<span class="chip">'+esc(getTvName(v))+'</span>';});h+='</div></div>';
@@ -516,6 +538,10 @@ function rSettings(){
   h+='<div><label class="fl">Moneda principal</label><select onchange="setCS(this.value)">'+cO+'</select></div>';
   h+='<div><label class="fl">Moneda referencia</label><select onchange="setBuf.exBase=this.value">'+bO+'</select></div>';
   h+='<div class="ff"><label class="fl">Tipo de cambio (1 '+esc(b.currency)+' = X '+esc(b.exBase)+')</label><div style="display:flex;gap:6px"><input type="number" step="0.001" value="'+b.exRate+'" oninput="setBuf.exRate=parseFloat(this.value)||1"><button class="btn sml" onclick="refreshRate()" style="flex-shrink:0">&#8635; Live</button></div></div></div>';
+  h+='<div style="margin:1rem 0 .5rem"><label class="fl">OpenWeatherMap API Key (opcional)</label>';
+  h+='<div style="display:flex;gap:6px"><input type="text" value="'+esc(weatherApiKey)+'" oninput="weatherApiKey=this.value;localStorage.setItem(\'owm_key\',this.value)" placeholder="Pega aquí tu API key gratuita">';
+  h+='<a class="btn sml" href="https://openweathermap.org/api" target="_blank" style="flex-shrink:0;text-decoration:none">Obtener</a></div>';
+  h+='<div style="font-size:11px;color:var(--mu);margin-top:3px">Gratuita — regístrate en openweathermap.org y copia tu key</div></div>';
   h+='<label class="fl" style="margin:1rem 0 6px">Viajeros y documentos</label>'+tCards;
   h+='<button class="btn sml" style="margin-top:8px" onclick="addSetTv()">+ A&ntilde;adir viajero</button>';
   h+='<div class="mftr"><button class="btn del" onclick="delTrip()" style="color:var(--red)">&#128465; Eliminar viaje</button>';
@@ -632,7 +658,13 @@ function rItinerary(dd,devs,t){
     if(!isFl&&ev.note)h+='<div class="ev-note">'+esc(ev.note)+'</div>';
     if(isFl)h+=flightCard(ev);
     if(isUrl(ev.url))h+='<a class="pill" href="'+esc(ev.url)+'" target="_blank">&#128279; '+esc(host(ev.url))+'</a>';
-    h+=linkedBudgetCard(ev.budgetId,t);
+    if(ev.budgetId){
+      var lbu=t.budget.find(function(b){return b.id===ev.budgetId;});
+      if(lbu){
+        var lcfg=CAT[lbu.cat]||{bg:'var(--surf2)',color:'var(--mu)'};
+        h+='<div class="lnk-mini" onclick="viewBudgetItem(\''+lbu.id+'\')"><span style="font-size:11px">&#128279;</span><span class="lnk-mini-name">'+esc(lbu.desc)+'</span><span class="lnk-mini-arrow">Ver &rarr;</span></div>';
+      }
+    }
     h+='</div>';
     h+='<div class="ev-r"><span class="badge" style="background:'+cfg.bg+';color:'+cfg.color+'">'+cfg.label+'</span>';
     if(+ev.cost>0)h+='<span class="ev-cost">'+esc(t.csym||"$")+nf(+ev.cost)+'</span>';
@@ -844,6 +876,61 @@ function openSet(){var t=T();if(!t)return;migrateTv(t);setBuf={name:t.name,desti
 
 
 
+
+function weatherIcon(code){
+  if(!code)return"&#127775;";
+  if(code.startsWith("01"))return"&#9728;";
+  if(code.startsWith("02")||code.startsWith("03"))return"&#9925;";
+  if(code.startsWith("04"))return"&#9729;";
+  if(code.startsWith("09")||code.startsWith("10"))return"&#127783;";
+  if(code.startsWith("11"))return"&#9928;";
+  if(code.startsWith("13"))return"&#10052;";
+  if(code.startsWith("50"))return"&#127787;";
+  return"&#127775;";
+}
+function fetchWeather(city,country,cb){
+  if(!weatherApiKey){cb(null,null);return;}
+  var q=encodeURIComponent(city+","+country);
+  var url="https://api.openweathermap.org/data/2.5/forecast?q="+q+"&units=metric&cnt=40&appid="+weatherApiKey;
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.list){cb(null,null);return;}
+    // Group by date, pick midday reading
+    var byDay={};
+    d.list.forEach(function(item){
+      var date=item.dt_txt.split(" ")[0];
+      if(!byDay[date]||item.dt_txt.includes("12:00"))byDay[date]=item;
+    });
+    cb(null,byDay);
+  })
+  .catch(function(){cb(null,null);});
+}
+function getWeather(t,cb){
+  var key=t.destination||"";
+  if(weatherCache[key]){cb(weatherCache[key]);return;}
+  // Parse city and country from destination string
+  var parts=(t.destination||"").split(",");
+  var city=parts[0].trim(), country=(parts[parts.length-1]||"US").trim().slice(0,2);
+  fetchWeather(city,country,function(err,data){
+    if(data){weatherCache[key]=data;}
+    cb(data||{});
+  });
+}
+function loadWeatherForTrip(t){
+  if(!weatherApiKey||!t)return;
+  getWeather(t,function(){render();});
+}
+
+
+function getDayNote(t,day){return (t.dayNotes&&t.dayNotes[day])||"";}
+function saveDayNote(day,val){
+  var t=T();if(!t)return;
+  if(!t.dayNotes)t.dayNotes={};
+  t.dayNotes[day]=val;
+  save();
+}
+
 function togDoc(){addDoc=!addDoc;if(addDoc)nDoc={cat:"vuelos",name:"",expiry:"",url:"",budgetId:"",note:""};render();}
 function doAddDoc(){
   if(!nDoc.name){toast("Escribe el nombre del documento");return;}
@@ -893,6 +980,7 @@ var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,togDoc,doAddDoc,delDoc,st
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
 window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
+window.saveDayNote=saveDayNote;
 window.nDoc=nDoc;
 window.nEv=nEv;window.nBu=nBu;window.nCk=nCk;window.eBuf=eBuf;window.wd=wd;window.setBuf=setBuf;
 
@@ -908,6 +996,11 @@ if(trips.length===0){
 trips=trips.filter(function(t){return t.name&&t.startDate;});
 if(trips.length===0){trips=[JSON.parse(JSON.stringify(DEMO))];localStorage.setItem("tp7_trips",JSON.stringify(trips));actId=null;}
 if(actId&&!trips.find(function(t){return t.id===actId;}))actId=null;
+
+window.addEventListener('online',  function(){isOffline=false; render();});
+window.addEventListener('offline', function(){isOffline=true;  render();});
+isOffline = !navigator.onLine;
+
 // Always start at home screen so user picks the trip
 actId=null;
 rHome();
