@@ -537,7 +537,33 @@ function rSettings(){
   var b=setBuf;
   var cO="";CURR.forEach(function(c){cO+='<option value="'+c.c+'"'+(b.currency===c.c?" selected":"")+'>'+c.c+' ('+c.s+')</option>';});
   var bO="";CURR.forEach(function(c){bO+='<option value="'+c.c+'"'+(b.exBase===c.c?" selected":"")+'>'+c.c+'</option>';});
-  var tR="";b.travelers.forEach(function(v,i){tR+='<div class="tv-row"><input value="'+esc(v)+'" oninput="setBuf.travelers['+i+']=this.value" placeholder="Nombre"><button class="btn del" onclick="rmSetTv('+i+')">&#10005;</button></div>';});
+  var tCards="";
+  (b.travelers||[]).forEach(function(tv,i){
+    var isObj=typeof tv==="object"&&tv!==null;
+    var name=getTvName(tv), open=(openTvIdx===i), warn=false;
+    if(isObj){
+      if(tv.passportExpiry){var pd=daysUntil(tv.passportExpiry);if(pd!==null&&pd<=90)warn=true;}
+      if(tv.estaExpiry){var ed=daysUntil(tv.estaExpiry);if(ed!==null&&ed<=90)warn=true;}
+    }
+    tCards+='<div class="tv-card"><div class="tv-head" onclick="toggleTvCard('+i+')">';
+    tCards+='<span style="font-size:13px;font-weight:500">'+(warn?"&#9888; ":"")+esc(name||"Viajero "+(i+1))+'</span>';
+    tCards+='<span style="font-size:12px;color:var(--mu)">'+(open?"&#9650;":"&#9660;")+'</span></div>';
+    if(open){
+      tCards+='<div class="tv-body"><div class="fg">';
+      tCards+='<div class="ff"><label class="fl">Nombre completo</label><input value="'+esc(isObj?tv.name||"":tv)+'" oninput="setBuf.travelers['+i+'].name=this.value"></div>';
+      tCards+='<div><label class="fl">Fecha nacimiento</label><input type="date" value="'+esc(isObj?tv.birthdate||"":"")+'" oninput="setBuf.travelers['+i+'].birthdate=this.value"></div>';
+      tCards+='<div><label class="fl">Email</label><input type="email" value="'+esc(isObj?tv.email||"":"")+'" oninput="setBuf.travelers['+i+'].email=this.value"></div>';
+      tCards+='<div><label class="fl">Tel&eacute;fono</label><input type="tel" value="'+esc(isObj?tv.phone||"":"")+'" oninput="setBuf.travelers['+i+'].phone=this.value"></div>';
+      tCards+='<div><label class="fl">N&ordm; Pasaporte</label><input value="'+esc(isObj?tv.passport||"":"")+'" oninput="setBuf.travelers['+i+'].passport=this.value" placeholder="AAA123456"></div>';
+      tCards+='<div><label class="fl">DNI / NIE</label><input value="'+esc(isObj?tv.dni||"":"")+'" oninput="setBuf.travelers['+i+'].dni=this.value"></div>';
+      tCards+='<div><label class="fl">Pasaporte emisi&oacute;n</label><input type="date" value="'+esc(isObj?tv.passportIssue||"":"")+'" oninput="setBuf.travelers['+i+'].passportIssue=this.value"></div>';
+      tCards+='<div><label class="fl">Pasaporte caducidad</label><input type="date" value="'+esc(isObj?tv.passportExpiry||"":"")+'" oninput="setBuf.travelers['+i+'].passportExpiry=this.value"></div>';
+      tCards+='<div><label class="fl">N&ordm; ESTA</label><input value="'+esc(isObj?tv.esta||"":"")+'" oninput="setBuf.travelers['+i+'].esta=this.value"></div>';
+      tCards+='<div><label class="fl">ESTA caducidad</label><input type="date" value="'+esc(isObj?tv.estaExpiry||"":"")+'" oninput="setBuf.travelers['+i+'].estaExpiry=this.value"></div>';
+      tCards+='</div><button class="btn del" style="margin-top:6px" onclick="rmSetTv('+i+')">&#128465; Eliminar viajero</button></div>';
+    }
+    tCards+='</div>';
+  });
   var h='<div class="overlay" onclick="if(event.target===this)closeSet()"><div class="modal">';
   h+='<div class="modal-t">Editar viaje</div><div class="modal-s">Modifica los datos generales</div>';
   h+='<div class="fg"><div class="ff"><label class="fl">Nombre del viaje</label><input value="'+esc(b.name)+'" oninput="setBuf.name=this.value"></div>';
@@ -663,7 +689,8 @@ function rItinerary(dd,devs,t){
     var wWind=Math.round(((wDayData.wind&&wDayData.wind.speed)||0)*3.6);
     var wRain=wDayData.pop?Math.round(wDayData.pop*100):0;
     h+='<div class="weather-bar"><span class="weather-icon">'+wIco+'</span><span class="weather-temp">'+wTemp+'&deg;C</span><span class="weather-desc">'+esc(wDesc)+'</span><span class="weather-detail">Sens. '+wFeel+'&deg;&nbsp;&middot;&nbsp;'+wWind+' km/h&nbsp;&middot;&nbsp;'+wRain+'% lluvia</span></div>';
-  } else if(weatherApiKey && selDay){
+  } else if(weatherApiKey && selDay && !weatherCache['_req_'+wKey]){
+    weatherCache['_req_'+wKey]=true;
     loadWeatherForTrip(t);
   }
   // ── DAY NOTES ──────────────────────────────────────────────────────────
@@ -952,7 +979,11 @@ function getWeather(t,cb){
 }
 function loadWeatherForTrip(t){
   if(!weatherApiKey||!t)return;
-  getWeather(t,function(){render();});
+  var k='_req_'+(t.destination||'');
+  getWeather(t,function(data){
+    if(!data||Object.keys(data).length===0)weatherCache[k]=false;
+    render();
+  });
 }
 
 
