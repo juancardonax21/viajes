@@ -652,6 +652,30 @@ function rItinerary(dd,devs,t){
   var h='<div class="dpick">';
   dd.forEach(function(d){var f=fday(d),has=t.events.some(function(e){return e.day===d;}),on=selDay===d;h+='<button class="dbt'+(on?" on":"")+'" onclick="pickDay(\''+d+'\')"><div class="wd">'+f.wd+'</div><div class="dd">'+f.d+'</div><div class="mo">'+f.mo+'</div>'+(has?'<div class="ddot"></div>':'')+'</button>';});
   h+='</div>';
+  // ── WEATHER BAR ────────────────────────────────────────────────────────
+  var wKey=t.destination||"";
+  var wDayData=(weatherCache[wKey]||{})[selDay];
+  if(wDayData){
+    var wTemp=Math.round(wDayData.main.temp);
+    var wFeel=Math.round(wDayData.main.feels_like);
+    var wDesc=wDayData.weather[0]?wDayData.weather[0].description:"";
+    var wIco=weatherIcon(wDayData.weather[0]?wDayData.weather[0].icon:"");
+    var wWind=Math.round(((wDayData.wind&&wDayData.wind.speed)||0)*3.6);
+    var wRain=wDayData.pop?Math.round(wDayData.pop*100):0;
+    h+='<div class="weather-bar"><span class="weather-icon">'+wIco+'</span><span class="weather-temp">'+wTemp+'&deg;C</span><span class="weather-desc">'+esc(wDesc)+'</span><span class="weather-detail">Sens. '+wFeel+'&deg;&nbsp;&middot;&nbsp;'+wWind+' km/h&nbsp;&middot;&nbsp;'+wRain+'% lluvia</span></div>';
+  } else if(weatherApiKey && selDay){
+    loadWeatherForTrip(t);
+  }
+  // ── DAY NOTES ──────────────────────────────────────────────────────────
+  var dNote=getDayNote(t,selDay);
+  var isEditNote=(editingNoteDay===selDay);
+  h+='<div class="day-notes"><div class="day-notes-label">&#128221; Notas del día</div>';
+  if(isEditNote){
+    h+='<textarea id="day-note-ta" rows="2" oninput="saveDayNote(\''+selDay+'\',this.value)" onblur="editingNoteDay=null;render()">'+esc(dNote)+'</textarea>';
+  } else {
+    h+='<div style="font-size:13px;color:'+(dNote?'var(--tx)':'var(--fa)')+';cursor:pointer;min-height:24px;line-height:1.6" onclick="editingNoteDay=\''+selDay+'\';render()">'+(dNote?esc(dNote):'Toca para añadir una nota...')+'</div>';
+  }
+  h+='</div>';
   h+='<div class="sech"><div style="font-size:14px;font-weight:500;text-transform:capitalize">'+fmt(selDay,{weekday:"long",day:"numeric",month:"long"})+'</div><button class="btn sml'+(addEv?" pri":"")+'" onclick="togEv()">'+( addEv?"&#10005; Cancelar":"+ Evento")+'</button></div>';
   if(addEv){h+='<div class="fbox">'+evForm(nEv,t,"doAddEv()","togEv()",false)+'</div>';}
   h+='<div class="evlist">';
