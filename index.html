@@ -189,6 +189,27 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--tx
 .bsplit{font-size:11px;margin-top:2px;font-family:'DM Mono',monospace}
 .bsplit .pend{color:var(--amber)}
 .bsplit .paid{color:var(--green)}
+
+/* DOCS TAB */
+.doc-grid{display:flex;flex-direction:column;gap:7px}
+.doc-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);box-shadow:var(--sh)}
+.doc-main{display:flex;align-items:center;gap:12px;padding:.75rem 1.125rem}
+.doc-icon{font-size:20px;flex-shrink:0;width:32px;text-align:center}
+.doc-body{flex:1;min-width:0}
+.doc-name{font-size:13px;font-weight:500;margin-bottom:1px}
+.doc-meta{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace}
+.doc-expiry-ok{color:var(--green)}
+.doc-expiry-warn{color:var(--amber)}
+.doc-expiry-red{color:var(--red)}
+.doc-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.doc-cat-badge{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--surf2);color:var(--mu);border:1px solid var(--brd);font-family:'DM Mono',monospace;white-space:nowrap}
+.doc-edit{padding:.875rem 1.125rem;border-top:1px solid var(--brd);background:var(--surf2);border-radius:0 0 var(--r) var(--r)}
+.doc-group-title{font-size:10px;font-weight:500;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin:1rem 0 .4rem;font-family:'DM Mono',monospace}
+.doc-linked{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);background:#ECEAFC;padding:2px 8px;border-radius:100px;border:1px solid #C5BFF5;cursor:pointer;margin-top:3px}
+.doc-linked:hover{opacity:.8}
+/* Budget doc counter */
+.bi-docs{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--purple);background:#ECEAFC;padding:1px 7px;border-radius:100px;border:1px solid #C5BFF5;cursor:pointer;margin-top:3px}
+.bi-docs:hover{opacity:.8}
 @media(max-width:620px){.sgrid,.bsum{grid-template-columns:1fr 1fr}.fg{grid-template-columns:1fr}.hdr-top,.nav{flex-direction:column}.cdown{text-align:left}.tgrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -236,6 +257,15 @@ budget:[
 {id:"b11",cat:"transport",desc:"Alquiler veh\u00EDculo ORL \u2192 RDU",amt:320.09,cin:"",cout:"",cancel:"",url:""},
 {id:"b12",cat:"meals",desc:"Presupuesto comidas estimado",amt:600,cin:"",cout:"",cancel:"",url:""}
 ],
+docs:[
+{id:"d1",cat:"vuelos",name:"Boarding pass MAD-MIA (Bea)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d2",cat:"vuelos",name:"Boarding pass MAD-MIA (Juan)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d3",cat:"vuelos",name:"Boarding pass MAD-MIA (Nicol\u00E1s)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d4",cat:"hoteles",name:"Confirmaci\u00F3n Le Particulier Miami",expiry:"",url:"",budgetId:"b4",note:""},
+{id:"d5",cat:"seguros",name:"P\u00F3liza seguro de viaje",expiry:"2026-04-10",url:"",budgetId:"",note:""},
+{id:"d6",cat:"permisos",name:"ESTA Bea Fern\u00E1ndez",expiry:"2027-03-01",url:"https://esta.cbp.dhs.gov/",budgetId:"",note:""},
+{id:"d7",cat:"otros",name:"Itinerario completo PDF",expiry:"",url:"",budgetId:"",note:""}
+],
 checklist:[
 {id:"c1",grp:"Pasaportes",text:"Bea Fern\u00E1ndez \u2014 v\u00E1lido hasta 15/01/2027",done:false,url:""},
 {id:"c2",grp:"Pasaportes",text:"Juan Cantona \u2014 v\u00E1lido hasta 02/05/2034",done:false,url:""},
@@ -265,7 +295,8 @@ var nCk={grp:"",text:"",url:""};
 var wiz=false,wstep=1,wd={name:"",destination:"",startDate:"",endDate:"",currency:"USD",csym:"$",exBase:"EUR",exRate:"1.08",travelers:[""]};
 var showSet=false,setBuf={},openTvIdx=-1;
 var syncT=null,syncSt="idle",syncErr="",lastSync=localStorage.getItem("tp7_ls")||"";
-var showAlt=false,rateLoading=false,openTvIdx=-1;
+var showAlt=false,rateLoading=false,openTvIdx=-1,editDocId=null,addDoc=false;
+var nDoc={cat:"vuelos",name:"",expiry:"",url:"",budgetId:"",note:""};
 
 function T(){return trips.find(function(t){return t.id===actId;})||null;}
 function uid(){return "x"+Date.now()+Math.random().toString(36).slice(2,5);}
@@ -277,6 +308,16 @@ function fmt(d,o){try{return new Date(d+"T00:00:00").toLocaleDateString("es-ES",
 function dArr(s,e){var a=[],c=new Date(s+"T00:00:00"),en=new Date(e+"T00:00:00");while(c<=en){a.push(c.toISOString().split("T")[0]);c.setDate(c.getDate()+1);}return a;}
 function fday(d){var dt=new Date(d+"T00:00:00");return{d:dt.getDate(),wd:dt.toLocaleDateString("es-ES",{weekday:"short"}),mo:dt.toLocaleDateString("es-ES",{month:"short"})};}
 function nn(ci,co){try{return Math.round((new Date(co+"T00:00:00")-new Date(ci+"T00:00:00"))/86400000);}catch(e){return 0;}}
+
+
+var DCATS={
+  vuelos:{label:"Vuelos",icon:"&#9992;"},
+  hoteles:{label:"Hoteles",icon:"&#127970;"},
+  seguros:{label:"Seguros",icon:"&#128274;"},
+  permisos:{label:"Visados / Permisos",icon:"&#128196;"},
+  transporte:{label:"Transporte",icon:"&#128652;"},
+  otros:{label:"Otros documentos",icon:"&#128190;"}
+};
 
 function getTvName(tv){return typeof tv==="string"?tv:(tv&&tv.name?tv.name:"Sin nombre");}
 function migrateTv(trip){
@@ -302,6 +343,15 @@ function buildAlerts(t){
     var n=getTvName(tv);
     if(tv.passportExpiry){var d=daysUntil(tv.passportExpiry);if(d!==null){if(d<0)out.push({lvl:"red",msg:"Pasaporte caducado: "+esc(n)});else if(d<=30)out.push({lvl:"red",msg:"Pasaporte caduca en "+d+" días: "+esc(n)});else if(d<=90)out.push({lvl:"amber",msg:"Pasaporte caduca en "+d+" días: "+esc(n)});}}
     if(tv.estaExpiry){var d2=daysUntil(tv.estaExpiry);if(d2!==null){if(d2<0)out.push({lvl:"red",msg:"ESTA caducada: "+esc(n)});else if(d2<=30)out.push({lvl:"red",msg:"ESTA caduca en "+d2+" días: "+esc(n)});else if(d2<=90)out.push({lvl:"amber",msg:"ESTA caduca en "+d2+" días: "+esc(n)});}}
+  });
+  (t.docs||[]).forEach(function(d){
+    if(!d.expiry)return;
+    var days=daysUntil(d.expiry);
+    if(days===null)return;
+    var cat=DCATS[d.cat]||{label:d.cat};
+    if(days<0)out.push({lvl:"red",msg:"Documento caducado: "+esc(d.name)});
+    else if(days<=30)out.push({lvl:"red",msg:"Caduca en "+days+" días: "+esc(d.name)});
+    else if(days<=90)out.push({lvl:"amber",msg:"Caduca en "+days+" días: "+esc(d.name)});
   });
   return out;
 }
@@ -416,6 +466,7 @@ h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNE
   [["itinerary","Itinerario"],["budget","Presupuesto"],["checklist","Checklist"]].forEach(function(x){h+='<button class="tab'+(tab===x[0]?" on":"")+'" onclick="setTab(\''+x[0]+'\')">'+x[1]+'</button>';});
   h+='</div>';
   if(tab==="itinerary")h+=rItinerary(dd,devs,t);
+  if(tab==="docs")h+=rDocs(t);
   if(tab==="budget")h+=rBudget(bycat,totAmt,totAlt,t);
   if(tab==="checklist")h+=rChecklist(ckDone,pct,grps,t);
   if(wiz)h+=rWizard();
@@ -669,6 +720,84 @@ function rChecklist(ckDone,pct,grps,t){
   return h;
 }
 
+
+function rDocs(t){
+  if(!t.docs)t.docs=[];
+  var h='';
+  // Add doc form
+  h+='<div class="sech"><span class="sech-t">Documentos del viaje</span><button class="btn sml'+(addDoc?' pri':'')+'" onclick="togDoc()">'+( addDoc?'&#10005; Cancelar':'+ Documento')+'</button></div>';
+  if(addDoc){
+    h+='<div class="fbox"><div class="fg">';
+    h+='<div class="ff"><label class="fl">Nombre del documento *</label><input value="'+esc(nDoc.name)+'" oninput="nDoc.name=this.value" placeholder="Boarding pass, seguro de viaje..."></div>';
+    h+='<div><label class="fl">Categor\u00EDa</label><select onchange="nDoc.cat=this.value">';
+    Object.keys(DCATS).forEach(function(k){h+='<option value="'+k+'"'+(nDoc.cat===k?' selected':'')+'>'+DCATS[k].label+'</option>';});
+    h+='</select></div>';
+    h+='<div><label class="fl">Fecha caducidad / validez</label><input type="date" value="'+esc(nDoc.expiry)+'" oninput="nDoc.expiry=this.value"></div>';
+    h+='<div><label class="fl">Vincular a reserva</label><select onchange="nDoc.budgetId=this.value"><option value="">-- Sin vincular --</option>';
+    t.budget.forEach(function(b){h+='<option value="'+b.id+'"'+(nDoc.budgetId===b.id?' selected':'')+'>'+esc(BCAT[b.cat]||b.cat)+' \u2014 '+esc(b.desc)+'</option>';});
+    h+='</select></div>';
+    h+='<div class="ff"><label class="fl">Link (Google Drive, PDF, imagen...)</label><input type="url" value="'+esc(nDoc.url)+'" oninput="nDoc.url=this.value" placeholder="https://drive.google.com/..."></div>';
+    h+='<div class="ff"><label class="fl">Notas</label><textarea rows="2" oninput="nDoc.note=this.value">'+esc(nDoc.note)+'</textarea></div>';
+    h+='</div><div class="fa"><button class="btn pri sml" onclick="doAddDoc()">Guardar</button><button class="btn sml" onclick="togDoc()">Cancelar</button></div></div>';
+  }
+  if(!t.docs.length && !addDoc){
+    h+='<div class="empty">Sin documentos todav\u00EDa<br><span style="font-size:12px">Pulsa &ldquo;+ Documento&rdquo; para a\u00F1adir uno</span></div>';
+    return h;
+  }
+  // Group by category
+  Object.keys(DCATS).forEach(function(cat){
+    var items=t.docs.filter(function(d){return d.cat===cat;});
+    if(!items.length)return;
+    h+='<div class="doc-group-title">'+DCATS[cat].icon+' '+DCATS[cat].label+'</div>';
+    h+='<div class="doc-grid">';
+    items.forEach(function(doc){
+      var isEd=(editDocId===doc.id);
+      var expClass='', expLabel='';
+      if(doc.expiry){
+        var dd=daysUntil(doc.expiry);
+        if(dd!==null){
+          if(dd<0){expClass='doc-expiry-red';expLabel='Caducado';}
+          else if(dd<=30){expClass='doc-expiry-red';expLabel='Caduca en '+dd+' d\u00EDas';}
+          else if(dd<=90){expClass='doc-expiry-warn';expLabel='Caduca en '+dd+' d\u00EDas';}
+          else{expClass='doc-expiry-ok';expLabel='Hasta '+fmt(doc.expiry,{day:'numeric',month:'short',year:'numeric'});}
+        }
+      }
+      var linkedBu=doc.budgetId?t.budget.find(function(b){return b.id===doc.budgetId;}):null;
+      h+='<div class="doc-card"><div class="doc-main">';
+      h+='<div class="doc-icon">'+DCATS[cat].icon+'</div>';
+      h+='<div class="doc-body">';
+      h+='<div class="doc-name">'+esc(doc.name)+'</div>';
+      if(expLabel)h+='<div class="doc-meta '+expClass+'">'+expLabel+'</div>';
+      if(linkedBu)h+='<div class="doc-linked" onclick="viewBudgetItem(\''+linkedBu.id+'\')">&#128279; '+esc(linkedBu.desc)+' &rarr;</div>';
+      if(isUrl(doc.url))h+='<a class="pill" href="'+esc(doc.url)+'" target="_blank">&#128194; '+esc(host(doc.url))+'</a>';
+      if(doc.note)h+='<div class="ev-note">'+esc(doc.note)+'</div>';
+      h+='</div>';
+      h+='<div class="doc-r">';
+      h+='<span class="doc-cat-badge">'+esc(DCATS[cat].label)+'</span>';
+      h+='<button class="btn edt" onclick="startEDoc(\''+doc.id+'\')">&#9998;</button>';
+      h+='<button class="btn del" onclick="delDoc(\''+doc.id+'\')">&#128465;</button>';
+      h+='</div></div>';
+      if(isEd){
+        h+='<div class="doc-edit"><div class="fg">';
+        h+='<div class="ff"><label class="fl">Nombre</label><input value="'+esc(doc.name)+'" oninput="eBuf.name=this.value"></div>';
+        h+='<div><label class="fl">Categor\u00EDa</label><select onchange="eBuf.cat=this.value">';
+        Object.keys(DCATS).forEach(function(k){h+='<option value="'+k+'"'+(doc.cat===k?' selected':'')+'>'+DCATS[k].label+'</option>';});
+        h+='</select></div>';
+        h+='<div><label class="fl">Fecha caducidad</label><input type="date" value="'+esc(doc.expiry||'')+'" oninput="eBuf.expiry=this.value"></div>';
+        h+='<div><label class="fl">Vincular a reserva</label><select onchange="eBuf.budgetId=this.value"><option value="">-- Sin vincular --</option>';
+        t.budget.forEach(function(b){h+='<option value="'+b.id+'"'+(doc.budgetId===b.id?' selected':'')+'>'+esc(BCAT[b.cat]||b.cat)+' \u2014 '+esc(b.desc)+'</option>';});
+        h+='</select></div>';
+        h+='<div class="ff"><label class="fl">Link</label><input type="url" value="'+esc(doc.url||'')+'" oninput="eBuf.url=this.value" placeholder="https://drive.google.com/..."></div>';
+        h+='<div class="ff"><label class="fl">Notas</label><textarea rows="2" oninput="eBuf.note=this.value">'+esc(doc.note||'')+'</textarea></div>';
+        h+='</div><div class="fa"><button class="btn pri sml" onclick="saveEDoc(\''+doc.id+'\')">Guardar</button><button class="btn sml" onclick="cancelE()">Cancelar</button></div></div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
 function rWizard(){
   var dots="";for(var i=0;i<4;i++)dots+='<div class="wdot'+(i<wstep?" on":"")+'"></div>';
   var body="",foot="";
@@ -688,12 +817,12 @@ function rmWT(i){wd.travelers.splice(i,1);render();}
 function goHome(){actId=null;tab="itinerary";selDay=null;hlBuId=null;addEv=addBu=addCk=false;editEvId=editBuId=editCkId=null;showSet=false;clearTimeout(syncT);rHome();}
 function openTrip(id){actId=id;selDay=null;tab="itinerary";localStorage.setItem("tp7_id",id);render();}
 function openTripEl(el){var id=el.dataset?el.dataset.id:el.getAttribute("data-id");if(id)openTrip(id);}
-function setTab(v){tab=v;addEv=addBu=addCk=false;editEvId=editBuId=editCkId=null;render();}
+function setTab(v){tab=v;addEv=addBu=addCk=addDoc=false;editEvId=editBuId=editCkId=editDocId=null;render();}
 function pickDay(d){selDay=d;nEv.day=d;render();}
 function togEv(){addEv=!addEv;if(addEv){nEv=mkEv();}render();}
 function togBu(){addBu=!addBu;if(addBu)nBu={cat:"flights",desc:"",amt:"",cin:"",cout:"",cancel:"",url:"",paid:false};render();}
 function togCk(){addCk=!addCk;if(addCk)nCk={grp:"",text:"",url:""};render();}
-function cancelE(){editEvId=null;editBuId=null;editCkId=null;render();}
+function cancelE(){editEvId=null;editBuId=null;editCkId=null;editDocId=null;render();}
 
 function doAddEv(){if(!nEv.title){toast("Escribe el t\u00EDtulo");return;}var t=T();t.events.push(Object.assign({},nEv,{id:uid(),cost:parseFloat(nEv.cost)||0,day:nEv.day||selDay}));t.events.sort(function(a,b){return (a.day+a.time).localeCompare(b.day+b.time);});addEv=false;save();render();toast("Evento a\u00F1adido");}
 function delEv(id){if(confirm("\u00BFEliminar este evento?")){var t=T();t.events=t.events.filter(function(e){return e.id!==id;});save();render();}}
@@ -713,6 +842,18 @@ function saveECk(id){var t=T();t.checklist=t.checklist.map(function(c){return c.
 
 function openSet(){var t=T();if(!t)return;migrateTv(t);setBuf={name:t.name,destination:t.destination,startDate:t.startDate,endDate:t.endDate,currency:t.currency||"USD",csym:t.csym||"$",exBase:t.exBase||"EUR",exRate:t.exRate||1,travelers:JSON.parse(JSON.stringify(t.travelers))};openTvIdx=-1;showSet=true;render();}
 
+
+
+function togDoc(){addDoc=!addDoc;if(addDoc)nDoc={cat:"vuelos",name:"",expiry:"",url:"",budgetId:"",note:""};render();}
+function doAddDoc(){
+  if(!nDoc.name){toast("Escribe el nombre del documento");return;}
+  var t=T();if(!t.docs)t.docs=[];
+  t.docs.push(Object.assign({},nDoc,{id:uid()}));
+  addDoc=false;save();render();toast("Documento añadido");
+}
+function delDoc(id){if(confirm("¿Eliminar este documento?")){var t=T();t.docs=t.docs.filter(function(d){return d.id!==id;});save();render();}}
+function startEDoc(id){editDocId=id;editEvId=null;editBuId=null;editCkId=null;var doc=T().docs.find(function(d){return d.id===id;});eBuf=Object.assign({},doc);render();}
+function saveEDoc(id){var t=T();t.docs=t.docs.map(function(d){return d.id===id?Object.assign({},d,eBuf):d;});editDocId=null;save();render();toast("Guardado");}
 
 function togglePaid(id){var t=T();t.budget=t.budget.map(function(b){return b.id===id?Object.assign({},b,{paid:!b.paid}):b;});save();render();}
 function togglePaidEl(el){var id=el.getAttribute("data-bid");if(id)togglePaid(id);}
@@ -734,15 +875,25 @@ function closeWiz(){wiz=false;if(actId)render();else rHome();}
 function wizNext(){
   if(wstep===1){var n=document.getElementById("wn"),d=document.getElementById("wdest");if(n)wd.name=n.value;if(d)wd.destination=d.value;if(!wd.name||!wd.destination){toast("Rellena nombre y destino");return;}}
   if(wstep===2){var s=document.getElementById("ws"),e=document.getElementById("we");if(s)wd.startDate=s.value;if(e)wd.endDate=e.value;if(!wd.startDate||!wd.endDate){toast("Elige las fechas");return;}if(wd.startDate>wd.endDate){toast("La salida debe ser antes");return;}}
-  if(wstep===4){var tl=wd.travelers.map(function(s){return s.trim();}).filter(Boolean);if(!tl.length){toast("A\u00F1ade al menos un viajero");return;}var nt={id:uid(),name:wd.name,destination:wd.destination,startDate:wd.startDate,endDate:wd.endDate,currency:wd.currency,csym:wd.csym,exBase:wd.exBase,exRate:parseFloat(wd.exRate)||1,travelers:tl,events:[],budget:[],checklist:[]};trips.push(nt);actId=nt.id;selDay=nt.startDate;tab="itinerary";localStorage.setItem("tp7_trips",JSON.stringify(trips));localStorage.setItem("tp7_id",actId);}
+  if(wstep===4){var tl=wd.travelers.map(function(s){return s.trim();}).filter(Boolean);if(!tl.length){toast("A\u00F1ade al menos un viajero");return;}var nt={id:uid(),name:wd.name,destination:wd.destination,startDate:wd.startDate,endDate:wd.endDate,currency:wd.currency,csym:wd.csym,exBase:wd.exBase,exRate:parseFloat(wd.exRate)||1,travelers:tl,events:[],budget:[],docs:[
+{id:"d1",cat:"vuelos",name:"Boarding pass MAD-MIA (Bea)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d2",cat:"vuelos",name:"Boarding pass MAD-MIA (Juan)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d3",cat:"vuelos",name:"Boarding pass MAD-MIA (Nicol\u00E1s)",expiry:"",url:"",budgetId:"b1",note:""},
+{id:"d4",cat:"hoteles",name:"Confirmaci\u00F3n Le Particulier Miami",expiry:"",url:"",budgetId:"b4",note:""},
+{id:"d5",cat:"seguros",name:"P\u00F3liza seguro de viaje",expiry:"2026-04-10",url:"",budgetId:"",note:""},
+{id:"d6",cat:"permisos",name:"ESTA Bea Fern\u00E1ndez",expiry:"2027-03-01",url:"https://esta.cbp.dhs.gov/",budgetId:"",note:""},
+{id:"d7",cat:"otros",name:"Itinerario completo PDF",expiry:"",url:"",budgetId:"",note:""}
+],
+checklist:[]};trips.push(nt);actId=nt.id;selDay=nt.startDate;tab="itinerary";localStorage.setItem("tp7_trips",JSON.stringify(trips));localStorage.setItem("tp7_id",actId);}
   wstep++;render();
 }
 function wizBack(){wstep>1?wstep--:closeWiz();render();}
 
-var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
+var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,togDoc,doAddDoc,delDoc,startEDoc,saveEDoc,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
 window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
+window.nDoc=nDoc;
 window.nEv=nEv;window.nBu=nBu;window.nCk=nCk;window.eBuf=eBuf;window.wd=wd;window.setBuf=setBuf;
 
 // INIT: load from Sheets for cross-device sync, then render
