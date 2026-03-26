@@ -8,16 +8,17 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F6F4EF;--surf:#fff;--surf2:#EFECE6;
-  --brd:#DDD9D0;--brd2:#C4BEB5;
-  --tx:#1A1816;--mu:#6E6860;--fa:#B0A89E;
-  --blue:#1A5CA8;--bluebg:#E8F0FB;
-  --green:#0D6B4A;--greenbg:#DDF3EA;
-  --amber:#9E600A;--amberbg:#FDF2DC;
-  --red:#B33030;--redbg:#FAE8E8;
-  --r:10px;--rs:6px;
-  --sh:0 1px 3px rgba(0,0,0,0.07);
-  --shm:0 4px 20px rgba(0,0,0,0.13);
+  --bg:#F0F4FF;--surf:#fff;--surf2:#E8EEFF;
+  --brd:#D0D8F0;--brd2:#A8B8E0;
+  --tx:#1A1830;--mu:#5A6080;--fa:#A8B0C8;
+  --blue:#2563EB;--bluebg:#EFF6FF;
+  --green:#059669;--greenbg:#ECFDF5;
+  --amber:#D97706;--amberbg:#FFFBEB;
+  --red:#DC2626;--redbg:#FEF2F2;
+  --purple:#7C3AED;--purplebg:#F5F3FF;
+  --r:12px;--rs:8px;
+  --sh:0 1px 4px rgba(37,99,235,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shm:0 8px 32px rgba(37,99,235,0.15),0 2px 8px rgba(0,0,0,0.08);
 }
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;min-height:100vh}
 .wrap{max-width:940px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
@@ -67,6 +68,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-
 .sync-go{color:var(--amber)}
 .sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
 .sc{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:.875rem 1.125rem;box-shadow:var(--sh)}
+.sc:first-child{background:linear-gradient(135deg,#EFF6FF,#F5F3FF);border-color:#C7D2FE}
 .sc-lbl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;font-family:'DM Mono',monospace}
 .sc-n{font-size:20px;font-weight:600;font-family:'DM Mono',monospace}
 .sc-s{font-size:11px;color:var(--mu);margin-top:1px}
@@ -74,13 +76,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-
 .pfill{height:100%;background:var(--tx);border-radius:100px;transition:width .4s}
 .tabs{display:flex;border-bottom:1px solid var(--brd);margin-bottom:1.25rem}
 .tab{background:none;border:none;border-bottom:2px solid transparent;padding:.625rem 1.25rem;font-size:13px;color:var(--mu);cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:-1px;transition:all .15s}
-.tab.on{color:var(--tx);border-bottom-color:var(--tx);font-weight:500}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
 .tab:hover:not(.on){color:var(--tx)}
 .dpick{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:1rem;scrollbar-width:none}
 .dpick::-webkit-scrollbar{display:none}
 .dbt{flex-shrink:0;background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:9px 13px;cursor:pointer;text-align:center;min-width:62px;transition:all .15s}
 .dbt:hover{border-color:var(--brd2)}
-.dbt.on{background:var(--tx);border-color:var(--tx)}
+.dbt.on{background:linear-gradient(135deg,#2563EB,#7C3AED);border-color:#2563EB}
 .dbt .wd{font-size:10px;text-transform:uppercase;color:var(--mu);margin-bottom:2px;font-family:'DM Mono',monospace}
 .dbt .dd{font-size:19px;font-weight:600;line-height:1;color:var(--tx)}
 .dbt .mo{font-size:10px;color:var(--mu);margin-top:2px;font-family:'DM Mono',monospace}
@@ -230,6 +232,9 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--tx
 .lnk-mini:hover{border-color:var(--brd2)}
 .lnk-mini-name{flex:1;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lnk-mini-arrow{color:var(--mu);font-size:11px;flex-shrink:0}
+
+/* SHARE MODAL */
+.share-modal{background:var(--surf);border-radius:14px;padding:2rem;max-width:480px;width:100%;box-shadow:var(--shm)}
 @media(max-width:620px){.sgrid,.bsum{grid-template-columns:1fr 1fr}.fg{grid-template-columns:1fr}.hdr-top,.nav{flex-direction:column}.cdown{text-align:left}.tgrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -238,9 +243,9 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--tx
 <div class="toast" id="toast"></div>
 <script>
 var SCRIPT_URL="https://script.google.com/macros/s/AKfycbwCHcRYieNHfSISboLMUB5v14mGOk2hesnhRSrv-FLLBF-VdbPl_Y4m_pjtjGq24fQn/exec";
-var CAT={flight:{label:"Vuelo",color:"#1A5CA8",bg:"#E8F0FB"},hotel:{label:"Hotel",color:"#0D6B4A",bg:"#DDF3EA"},activity:{label:"Actividad",color:"#4F35B3",bg:"#ECEAFC"},meal:{label:"Comida",color:"#9E600A",bg:"#FDF2DC"},transport:{label:"Transporte",color:"#B33030",bg:"#FAE8E8"},other:{label:"Otro",color:"#5A5650",bg:"#EDEAE6"}};
+var CAT={flight:{label:"Vuelo",color:"#1D4ED8",bg:"#DBEAFE"},hotel:{label:"Hotel",color:"#065F46",bg:"#D1FAE5"},activity:{label:"Actividad",color:"#5B21B6",bg:"#EDE9FE"},meal:{label:"Comida",color:"#92400E",bg:"#FEF3C7"},transport:{label:"Transporte",color:"#991B1B",bg:"#FEE2E2"},other:{label:"Otro",color:"#374151",bg:"#F3F4F6"}};
 var BCAT={flights:"Vuelos",hotels:"Hoteles",transport:"Transporte",activities:"Actividades",meals:"Comidas",other:"Otros"};
-var BCATC={flights:"#1A5CA8",hotels:"#0D6B4A",transport:"#B33030",activities:"#4F35B3",meals:"#9E600A",other:"#5A5650"};
+var BCATC={flights:"#1D4ED8",hotels:"#065F46",transport:"#991B1B",activities:"#5B21B6",meals:"#92400E",other:"#374151"};
 var CURR=[{c:"USD",s:"$"},{c:"EUR",s:"\u20AC"},{c:"GBP",s:"\u00A3"},{c:"JPY",s:"\u00A5"},{c:"CHF",s:"Fr"},{c:"CAD",s:"CA$"},{c:"AUD",s:"A$"},{c:"MXN",s:"$MX"},{c:"BRL",s:"R$"},{c:"NOK",s:"kr"},{c:"SEK",s:"kr"},{c:"THB",s:"\u0E3F"},{c:"KRW",s:"\u20A9"},{c:"SGD",s:"S$"},{c:"ARS",s:"$AR"}];
 var DEMO={id:"miami2026",name:"Semana Santa \u00B7 Miami 2026",destination:"Miami, Florida, USA",startDate:"2026-03-27",endDate:"2026-04-05",currency:"USD",csym:"$",exBase:"EUR",exRate:1.08,travelers:[{name:"Bea Fern\u00E1ndez",passport:"AAA123456",passportExpiry:"2027-01-15",passportIssue:"2017-01-15",dni:"12345678A",esta:"",estaExpiry:"",birthdate:"1982-05-10",email:"bea@email.com",phone:"+34 600 000 001"},{name:"Juan Cantona",passport:"BBB234567",passportExpiry:"2034-05-02",passportIssue:"2024-05-02",dni:"23456789B",esta:"",estaExpiry:"",birthdate:"1980-03-22",email:"juan@email.com",phone:"+34 600 000 002"},{name:"Nicol\u00E1s Cantona",passport:"CCC345678",passportExpiry:"2029-10-10",passportIssue:"2019-10-10",dni:"34567890C",esta:"",estaExpiry:"",birthdate:"2010-07-15",email:"",phone:""},{name:"Viajero 4",passport:"",passportExpiry:"",passportIssue:"",dni:"",esta:"",estaExpiry:"",birthdate:"",email:"",phone:""}],
 events:[
@@ -315,7 +320,7 @@ var nCk={grp:"",text:"",url:""};
 var wiz=false,wstep=1,wd={name:"",destination:"",startDate:"",endDate:"",currency:"USD",csym:"$",exBase:"EUR",exRate:"1.08",travelers:[""]};
 var showSet=false,setBuf={},openTvIdx=-1;
 var syncT=null,syncSt="idle",syncErr="",lastSync=localStorage.getItem("tp7_ls")||"";
-var showAlt=false,rateLoading=false,openTvIdx=-1,editDocId=null,addDoc=false;
+var showAlt=false,rateLoading=false,showShare=false,openTvIdx=-1,editDocId=null,addDoc=false;
 var weatherCache={},weatherApiKey=localStorage.getItem("owm_key")||"e58f8a6efa887e38af35c05014efffe6",isOffline=false,editingNoteDay=null;
 var nDoc={cat:"vuelos",name:"",expiry:"",url:"",budgetId:"",note:""};
 
@@ -472,7 +477,7 @@ function render(){
   var h="";
   var offBadge=isOffline?'<span class="offline-badge">&#9889; Sin conexión</span>':'';
   var ctog='<div class="curr-toggle"><button class="curr-btn'+(showAlt?'':' on')+'" onclick="setShowAlt(false)">'+esc(t.csym||'$')+'</button><button class="curr-btn'+(showAlt?' on':'')+'" onclick="setShowAlt(true)">'+esc(t.exBase||'EUR')+'</button></div>';
-h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+offBadge+sh+ctog+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
+h+='<div class="nav"><span class="logo" onclick="goHome()" style="color:var(--blue);font-weight:600">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+offBadge+sh+ctog+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
   h+='<div class="hdr"><div class="hdr-top"><div><div class="dest-lbl">'+esc(t.destination)+'</div><div class="trip-name">'+esc(t.name)+'</div><div class="trip-meta">'+fmt(t.startDate,{day:"numeric",month:"long"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"long",year:"numeric"})+'&nbsp;&middot;&nbsp;'+dd.length+' d&iacute;as&nbsp;&middot;&nbsp;'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="cdown"><div class="cdown-n">'+(dL>0?dL:dL===0?"HOY":"&#9992;")+'</div><div class="cdown-l">'+(dL>0?"d&iacute;as":dL===0?"Hoy":"En curso")+'</div></div></div>';
   h+='<div class="travelers">';t.travelers.forEach(function(v){h+='<span class="chip">'+esc(getTvName(v))+'</span>';});h+='</div></div>';
@@ -493,14 +498,18 @@ h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNE
   if(tab==="checklist")h+=rChecklist(ckDone,pct,grps,t);
   if(wiz)h+=rWizard();
   if(showSet)h+=rSettings();
+  if(showShare)h+=rShare(t);
   document.getElementById("app").innerHTML=h;
 }
 
 function rHome(){
   var today=new Date();today.setHours(0,0,0,0);
-  var h='<div class="nav"><span class="logo">&#9992; TRAVEL PLANNER</span></div>';
-  if(syncSt==="syncing"||syncSt==="pending")h+='<div style="font-size:11px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:1rem"><span class="spin"></span> Cargando datos...</div>';
-  h+='<div class="home-ttl">Mis viajes</div><div class="home-sub">Selecciona un viaje o crea uno nuevo</div>';
+  var h='<div style="background:linear-gradient(135deg,#1e3a8a 0%,#2563EB 50%,#7C3AED 100%);border-radius:16px;padding:2rem 2rem 1.5rem;margin-bottom:1.5rem;color:#fff">';
+  h+='<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:.15em;opacity:.7;margin-bottom:.5rem">&#9992; TRAVEL PLANNER</div>';
+  h+='<div style="font-size:28px;font-weight:600;margin-bottom:.25rem">Mis viajes</div>';
+  h+='<div style="font-size:14px;opacity:.8">Selecciona un viaje o crea uno nuevo</div>';
+  h+='</div>';
+
   h+='<div class="tgrid">';
   trips.forEach(function(t){
     migrateTv(t);
@@ -509,7 +518,7 @@ function rHome(){
     var tPend=(t.budget||[]).reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
     var tPaid=(t.budget||[]).reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
     var tSym=t.csym||"$";
-    h+='<div class="tcard'+(dL<-1?" past":"")+'" data-id="'+t.id+'" onclick="openTripEl(this)">';
+    h+='<div class="tcard'+(dL<-1?" past":"")+'" data-id="'+t.id+'" onclick="openTripEl(this)" style="border-top:3px solid var(--blue)">';
     h+='<div class="tc-dest">'+esc(t.destination)+'</div>';
     h+='<div class="tc-name">'+esc(t.name)+'</div>';
     h+='<div class="tc-dates">'+fmt(t.startDate,{day:"numeric",month:"short"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"short",year:"numeric"})+'</div>';
@@ -957,6 +966,67 @@ function refreshRate(){
   });
 }
 
+
+function openShareView(){showShare=true;render();}
+function closeShare(){showShare=false;render();}
+function rShare(t){
+  var url=window.location.href.split('?')[0]+"?share="+encodeURIComponent(t.id)+"&trip="+encodeURIComponent(JSON.stringify({
+    name:t.name,destination:t.destination,startDate:t.startDate,endDate:t.endDate,
+    travelers:t.travelers.map(getTvName),events:t.events,budget:t.budget
+  }));
+  // Truncate if too long — share summary only
+  var shareUrl=window.location.href.split('?')[0]+"#share";
+  var h='<div class="overlay" onclick="if(event.target===this)closeShare()"><div class="share-modal">';
+  h+='<div class="modal-t">&#128279; Compartir viaje</div>';
+  h+='<div class="modal-s">Crea un enlace de solo lectura para compartir el itinerario con otros viajeros del grupo. No podrán editar nada.</div>';
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:1rem;margin-bottom:1rem">';
+  h+='<div style="font-size:11px;color:var(--mu);margin-bottom:.5rem;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.06em">Vista de solo lectura</div>';
+  h+='<div style="font-size:13px;font-weight:500;margin-bottom:.25rem">'+esc(t.name)+'</div>';
+  h+='<div style="font-size:12px;color:var(--mu)">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'&nbsp;&middot;&nbsp;'+t.events.length+' eventos&nbsp;&middot;&nbsp;'+t.budget.length+' partidas</div>';
+  h+='</div>';
+  h+='<div style="background:var(--bluebg);border:1px solid #C7D2FE;border-radius:var(--rs);padding:.875rem;margin-bottom:1rem">';
+  h+='<div style="font-size:11px;color:var(--blue);font-family:\'DM Mono\',monospace;margin-bottom:.5rem">INSTRUCCIONES</div>';
+  h+='<div style="font-size:12px;color:var(--mu);line-height:1.6">1. Exporta los datos con el bot\u00F3n de abajo<br>2. Comparte el archivo o copia los datos<br>3. Quien lo reciba puede importarlo como nuevo viaje</div>';
+  h+='</div>';
+  // Export as JSON
+  h+='<div class="fa">';
+  h+='<button class="btn pri" onclick="exportTrip()">&#11015; Exportar viaje (JSON)</button>';
+  h+='<button class="btn" onclick="closeShare()">Cerrar</button>';
+  h+='</div>';
+  h+='</div></div>';
+  return h;
+}
+function exportTrip(){
+  var t=T();if(!t)return;
+  var data=JSON.stringify(t,null,2);
+  var blob=new Blob([data],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=(t.name||"viaje").replace(/[^a-zA-Z0-9]/g,"_")+".json";
+  a.click();
+  toast("Viaje exportado como JSON");
+}
+function importTrip(){
+  var input=document.createElement("input");
+  input.type="file";input.accept=".json";
+  input.onchange=function(e){
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var t=JSON.parse(ev.target.result);
+        if(!t.name||!t.startDate)throw new Error("Formato inv\u00E1lido");
+        t.id=uid();// new id to avoid conflicts
+        trips.push(t);
+        save();rHome();
+        toast("Viaje importado: "+t.name);
+      }catch(e){toast("Error al importar: "+e.message,4000);}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
 function openWiz(){wiz=true;wstep=1;wd={name:"",destination:"",startDate:"",endDate:"",currency:"USD",csym:"$",exBase:"EUR",exRate:"1.08",travelers:[""]};render();}
 function closeWiz(){wiz=false;if(actId)render();else rHome();}
 function wizNext(){
@@ -976,7 +1046,7 @@ checklist:[]};trips.push(nt);actId=nt.id;selDay=nt.startDate;tab="itinerary";loc
 }
 function wizBack(){wstep>1?wstep--:closeWiz();render();}
 
-var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,togDoc,doAddDoc,delDoc,startEDoc,saveEDoc,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
+var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,openShareView,closeShare,exportTrip,importTrip,togDoc,doAddDoc,delDoc,startEDoc,saveEDoc,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
 window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
