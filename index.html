@@ -170,32 +170,25 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--tx
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;width:10px;height:10px;border:2px solid #ccc;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 
-/* ALERTS */
-.alert-row{display:flex;align-items:center;gap:8px;padding:.5rem .875rem;border-radius:var(--rs);margin-bottom:4px;font-size:12px}
-.alert-red{background:var(--redbg);color:var(--red);border:1px solid #F5C0C0}
-.alert-amber{background:var(--amberbg);color:var(--amber);border:1px solid #F5DBA0}
-.alert-blue{background:var(--bluebg);color:var(--blue);border:1px solid #C5D9F2}
-/* PAID BADGE */
-.paid-yes{font-size:10px;padding:2px 7px;border-radius:100px;background:var(--greenbg);color:var(--green);border:1px solid #9FD8BF;font-family:'DM Mono',monospace;white-space:nowrap}
-.paid-no{font-size:10px;padding:2px 7px;border-radius:100px;background:var(--surf2);color:var(--mu);border:1px solid var(--brd);font-family:'DM Mono',monospace;white-space:nowrap;cursor:pointer}
-/* TRAVELER CARD */
-.tv-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);margin-bottom:8px;box-shadow:var(--sh)}
-.tv-card-head{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.125rem;cursor:pointer}
-.tv-card-name{font-size:14px;font-weight:500}
-.tv-card-body{padding:.875rem 1.125rem;border-top:1px solid var(--brd);background:var(--surf2);border-radius:0 0 var(--r) var(--r)}
-/* CURRENCY TOGGLE */
-.curr-toggle{display:flex;gap:0;border:1px solid var(--brd);border-radius:var(--rs);overflow:hidden;flex-shrink:0}
-.curr-btn{background:none;border:none;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace;color:var(--mu)}
+.alert-row{display:flex;align-items:center;gap:8px;padding:.5rem .875rem;border-radius:var(--rs);margin-bottom:4px;font-size:12px;font-weight:500}
+.al-red{background:var(--redbg);color:var(--red);border:1px solid #F5C0C0}
+.al-amber{background:var(--amberbg);color:var(--amber);border:1px solid #F5DBA0}
+.paid-chip{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:100px;font-family:'DM Mono',monospace;white-space:nowrap;cursor:pointer;transition:all .15s}
+.paid-chip.yes{background:var(--greenbg);color:var(--green);border:1px solid #9FD8BF}
+.paid-chip.no{background:var(--surf2);color:var(--mu);border:1px solid var(--brd)}
+.curr-toggle{display:flex;border:1px solid var(--brd);border-radius:var(--rs);overflow:hidden}
+.curr-btn{background:none;border:none;border-right:1px solid var(--brd);padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;color:var(--mu)}
+.curr-btn:last-child{border-right:none}
 .curr-btn.on{background:var(--tx);color:#fff}
-/* HOME SUMMARY */
-.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.75rem}
-.hstat{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:.875rem 1.125rem;box-shadow:var(--sh)}
-.hstat-lbl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-family:'DM Mono',monospace}
-.hstat-n{font-size:18px;font-weight:600;font-family:'DM Mono',monospace}
-.hstat-s{font-size:11px;color:var(--mu);margin-top:1px}
-.hstat.danger .hstat-n{color:var(--red)}
-.hstat.warn .hstat-n{color:var(--amber)}
-.hstat.ok .hstat-n{color:var(--green)}
+.tc-stat{font-size:11px;color:var(--mu);margin-top:4px;font-family:'DM Mono',monospace}
+.tc-alert-row{font-size:11px;color:var(--red);margin-top:2px}
+.tv-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);margin-bottom:6px;overflow:hidden}
+.tv-head{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;cursor:pointer}
+.tv-head:hover{background:var(--surf2)}
+.tv-body{padding:1rem;border-top:1px solid var(--brd);background:var(--surf2)}
+.bsplit{font-size:11px;margin-top:2px;font-family:'DM Mono',monospace}
+.bsplit .pend{color:var(--amber)}
+.bsplit .paid{color:var(--green)}
 @media(max-width:620px){.sgrid,.bsum{grid-template-columns:1fr 1fr}.fg{grid-template-columns:1fr}.hdr-top,.nav{flex-direction:column}.cdown{text-align:left}.tgrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -272,7 +265,7 @@ var nCk={grp:"",text:"",url:""};
 var wiz=false,wstep=1,wd={name:"",destination:"",startDate:"",endDate:"",currency:"USD",csym:"$",exBase:"EUR",exRate:"1.08",travelers:[""]};
 var showSet=false,setBuf={},openTvIdx=-1;
 var syncT=null,syncSt="idle",syncErr="",lastSync=localStorage.getItem("tp7_ls")||"";
-var showAlt=false,rateLoading=false;
+var showAlt=false,rateLoading=false,openTvIdx=-1;
 
 function T(){return trips.find(function(t){return t.id===actId;})||null;}
 function uid(){return "x"+Date.now()+Math.random().toString(36).slice(2,5);}
@@ -285,56 +278,38 @@ function dArr(s,e){var a=[],c=new Date(s+"T00:00:00"),en=new Date(e+"T00:00:00")
 function fday(d){var dt=new Date(d+"T00:00:00");return{d:dt.getDate(),wd:dt.toLocaleDateString("es-ES",{weekday:"short"}),mo:dt.toLocaleDateString("es-ES",{month:"short"})};}
 function nn(ci,co){try{return Math.round((new Date(co+"T00:00:00")-new Date(ci+"T00:00:00"))/86400000);}catch(e){return 0;}}
 
-// Migrate travelers: string[] → object[]
-function migrateTravelers(trip){
-  if(!trip.travelers||!trip.travelers.length)return;
+function getTvName(tv){return typeof tv==="string"?tv:(tv&&tv.name?tv.name:"Sin nombre");}
+function migrateTv(trip){
+  if(!trip||!trip.travelers)return;
   trip.travelers=trip.travelers.map(function(tv){
-    if(typeof tv==="string")return{name:tv,passport:"",passportExpiry:"",passportIssue:"",dni:"",esta:"",estaExpiry:"",birthdate:"",email:"",phone:""};
+    if(typeof tv!=="object"||tv===null)return{name:String(tv||""),passport:"",passportExpiry:"",passportIssue:"",dni:"",esta:"",estaExpiry:"",birthdate:"",email:"",phone:""};
     return tv;
   });
 }
-function getTravelerName(tv){return typeof tv==="string"?tv:(tv.name||"Sin nombre");}
-
-// Fetch live exchange rate
-function fetchRate(fromC,toC,cb){
-  fetch("https://api.exchangerate-api.com/v4/latest/"+fromC)
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.rates&&d.rates[toC]){cb(null,d.rates[toC]);}
-    else{cb("no rate");}
-  })
-  .catch(function(e){cb(e.message);});
-}
-
-// Alert helpers
-function daysUntil(dateStr){
-  if(!dateStr)return null;
-  try{return Math.ceil((new Date(dateStr+"T00:00:00")-new Date())/86400000);}catch(e){return null;}
-}
-function alertLevel(days){
-  if(days===null)return null;
-  if(days<0)return"red";
-  if(days<=30)return"red";
-  if(days<=90)return"amber";
-  return null;
-}
+function daysUntil(d){if(!d)return null;try{return Math.ceil((new Date(d+"T00:00:00")-new Date())/86400000);}catch(e){return null;}}
 function buildAlerts(t){
-  var alerts=[];
-  // Cancelation deadlines
-  t.budget.forEach(function(b){
+  var out=[];
+  (t.budget||[]).forEach(function(b){
     if(!b.cancel)return;
     var d=daysUntil(b.cancel);
     if(d===null)return;
-    var lvl=d<0?"red":d<=7?"red":d<=14?"amber":null;
-    if(lvl)alerts.push({lvl:lvl,msg:(d<0?"VENCIDA":"En "+d+" días")+" — Cancelación gratuita: "+esc(b.desc)});
+    if(d<0)out.push({lvl:"red",msg:"VENCIDA — Cancel. gratuita: "+esc(b.desc)});
+    else if(d<=7)out.push({lvl:"red",msg:"En "+d+" días — Cancel. gratuita: "+esc(b.desc)});
+    else if(d<=14)out.push({lvl:"amber",msg:"En "+d+" días — Cancel. gratuita: "+esc(b.desc)});
   });
-  // Traveler document expiry
-  t.travelers.forEach(function(tv){
-    var name=getTravelerName(tv);
-    if(tv.passportExpiry){var d=daysUntil(tv.passportExpiry);var lvl=alertLevel(d);if(lvl)alerts.push({lvl:lvl,msg:"Pasaporte de "+esc(name)+" caduca "+(d<0?"el "+fmt(tv.passportExpiry,{day:"numeric",month:"short",year:"numeric"}):"en "+d+" días")});}
-    if(tv.estaExpiry){var d2=daysUntil(tv.estaExpiry);var lvl2=alertLevel(d2);if(lvl2)alerts.push({lvl:lvl2,msg:"ESTA de "+esc(name)+" caduca "+(d2<0?"el "+fmt(tv.estaExpiry,{day:"numeric",month:"short",year:"numeric"}):"en "+d2+" días")});}
+  (t.travelers||[]).forEach(function(tv){
+    if(typeof tv!=="object")return;
+    var n=getTvName(tv);
+    if(tv.passportExpiry){var d=daysUntil(tv.passportExpiry);if(d!==null){if(d<0)out.push({lvl:"red",msg:"Pasaporte caducado: "+esc(n)});else if(d<=30)out.push({lvl:"red",msg:"Pasaporte caduca en "+d+" días: "+esc(n)});else if(d<=90)out.push({lvl:"amber",msg:"Pasaporte caduca en "+d+" días: "+esc(n)});}}
+    if(tv.estaExpiry){var d2=daysUntil(tv.estaExpiry);if(d2!==null){if(d2<0)out.push({lvl:"red",msg:"ESTA caducada: "+esc(n)});else if(d2<=30)out.push({lvl:"red",msg:"ESTA caduca en "+d2+" días: "+esc(n)});else if(d2<=90)out.push({lvl:"amber",msg:"ESTA caduca en "+d2+" días: "+esc(n)});}}
   });
-  return alerts;
+  return out;
+}
+function fetchRate(from,to,cb){
+  fetch("https://api.exchangerate-api.com/v4/latest/"+from)
+  .then(function(r){return r.json();})
+  .then(function(d){if(d.rates&&d.rates[to])cb(null,d.rates[to]);else cb("sin datos");})
+  .catch(function(e){cb(e.message);});
 }
 
 function toast(msg,dur){var el=document.getElementById("toast");el.textContent=msg;el.className="toast show";setTimeout(function(){el.className="toast";},dur||2800);}
@@ -400,7 +375,8 @@ function manualSync(){clearTimeout(syncT);doSync();}
 function render(){
   if(!actId){rHome();return;}
   var t=T();if(!t){actId=null;rHome();return;}
-  migrateTravelers(t);
+  migrateTv(t);
+  var dSym=showAlt?(t.exBase||"EUR"):(t.csym||"$"),dRate=showAlt?(1/(t.exRate||1)):1;
   var dd=dArr(t.startDate,t.endDate);
   if(!selDay||dd.indexOf(selDay)<0)selDay=t.startDate;
   var devs=t.events.filter(function(e){return e.day===selDay;}).sort(function(a,b){return a.time.localeCompare(b.time);});
@@ -416,17 +392,13 @@ function render(){
   if(syncSt==="syncing"||syncSt==="pending")sh='<span class="sync-lbl sync-go"><span class="spin"></span> Guardando...</span>';
   else if(syncSt==="ok")sh='<span class="sync-lbl sync-ok">&#10003; '+esc(lastSync)+'</span>';
   else if(syncSt==="err")sh='<span class="sync-lbl sync-err" title="'+esc(syncErr)+'">&#10007; Error &mdash; <button class="btn sml" style="color:var(--red);border-color:var(--red);padding:2px 8px;font-size:11px" onclick="manualSync()">Reintentar</button></span>';
-  var currToggle='<div class="curr-toggle"><button class="curr-btn'+(showAlt?"":" on")+'" onclick="setShowAlt(false)">'+esc(t.csym||"$")+'</button><button class="curr-btn'+(showAlt?" on":"")+'" onclick="setShowAlt(true)">'+esc(t.exBase||"EUR")+'</button></div>';
   var h="";
-  h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+sh+currToggle+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
+  var ctog='<div class="curr-toggle"><button class="curr-btn'+(showAlt?'':' on')+'" onclick="setShowAlt(false)">'+esc(t.csym||'$')+'</button><button class="curr-btn'+(showAlt?' on':'')+'" onclick="setShowAlt(true)">'+esc(t.exBase||'EUR')+'</button></div>';
+h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNER</span><div class="nav-r">'+sh+ctog+'<button class="btn ghost sml" onclick="openSet()">&#9881; Editar viaje</button><button class="btn sml" onclick="goHome()">&#8592; Viajes</button></div></div>';
   h+='<div class="hdr"><div class="hdr-top"><div><div class="dest-lbl">'+esc(t.destination)+'</div><div class="trip-name">'+esc(t.name)+'</div><div class="trip-meta">'+fmt(t.startDate,{day:"numeric",month:"long"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"long",year:"numeric"})+'&nbsp;&middot;&nbsp;'+dd.length+' d&iacute;as&nbsp;&middot;&nbsp;'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="cdown"><div class="cdown-n">'+(dL>0?dL:dL===0?"HOY":"&#9992;")+'</div><div class="cdown-l">'+(dL>0?"d&iacute;as":dL===0?"Hoy":"En curso")+'</div></div></div>';
-  h+='<div class="travelers">';t.travelers.forEach(function(v){h+='<span class="chip">'+esc(getTravelerName(v))+'</span>';});h+='</div></div>';
-  var disp=showAlt?{sym:esc(t.exBase||"EUR"),val:totAlt,sub:esc(t.csym||"$")+nf(totAmt)}:{sym:esc(t.csym||"$"),val:totAmt,sub:esc(t.exBase||"EUR")+" "+nf(totAlt)};
-  var dispPP=showAlt?{sym:esc(t.exBase||"EUR"),val:totAlt/Math.max(1,t.travelers.length)}:{sym:esc(t.csym||"$"),val:totAmt/Math.max(1,t.travelers.length)};
-  var pendingAmt=t.budget.reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
-  var paidAmt=t.budget.reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
-  h+='<div class="sgrid"><div class="sc"><div class="sc-lbl">Presupuesto total</div><div class="sc-n">'+disp.sym+nf(disp.val)+'</div><div class="sc-s">'+disp.sub+'</div></div>';
+  h+='<div class="travelers">';t.travelers.forEach(function(v){h+='<span class="chip">'+esc(getTvName(v))+'</span>';});h+='</div></div>';
+  h+='<div class="sc"><div class="sc-lbl">Presupuesto total</div><div class="sc-n">'+esc(dSym)+nf(showAlt?totAlt:totAmt)+'</div><div class="sc-s bsplit"><span class="pend">Pend. '+esc(dSym)+nf(tPendNow*dRate)+'</span> <span class="paid">Pag. '+esc(dSym)+nf(tPaidNow*dRate)+'</span></div></div>';
   h+='<div class="sc"><div class="sc-lbl">Por persona</div><div class="sc-n">'+esc(t.csym||"$")+nf(totAmt/Math.max(1,t.travelers.length))+'</div><div class="sc-s">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="sc"><div class="sc-lbl">Checklist</div><div class="sc-n">'+ckDone+'/'+t.checklist.length+'</div><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div></div></div>';
   h+='<div class="tabs">';
@@ -445,26 +417,21 @@ function rHome(){
   var h='<div class="nav"><span class="logo">&#9992; TRAVEL PLANNER</span></div>';
   if(syncSt==="syncing"||syncSt==="pending")h+='<div style="font-size:11px;color:var(--mu);font-family:\'DM Mono\',monospace;margin-bottom:1rem"><span class="spin"></span> Cargando datos...</div>';
   h+='<div class="home-ttl">Mis viajes</div><div class="home-sub">Selecciona un viaje o crea uno nuevo</div>';
-  // Global stats across all trips
-  var totalPending=0,totalPaid=0,alertCount=0;
-  trips.forEach(function(t){
-    migrateTravelers(t);
-    (t.budget||[]).forEach(function(b){if(b.paid){totalPaid+=(+b.amt||0);}else{totalPending+=(+b.amt||0);}});
-    alertCount+=buildAlerts(t).length;
-  });
-  var anySym=trips.length>0?(trips[0].csym||"$"):"$";
-  h+='<div class="home-stats">';
-  h+='<div class="hstat '+(alertCount>0?"danger":"ok")+'"><div class="hstat-lbl">Alertas</div><div class="hstat-n">'+(alertCount>0?"&#9888; "+alertCount:"&#10003; 0")+'</div><div class="hstat-s">'+(alertCount>0?"Requieren atención":"Todo en orden")+'</div></div>';
-  h+='<div class="hstat warn"><div class="hstat-lbl">Pendiente de pago</div><div class="hstat-n">'+anySym+nf(totalPending)+'</div><div class="hstat-s">Sin confirmar</div></div>';
-  h+='<div class="hstat ok"><div class="hstat-lbl">Pagado</div><div class="hstat-n">'+anySym+nf(totalPaid)+'</div><div class="hstat-s">Confirmado</div></div>';
-  h+='</div>';
   h+='<div class="tgrid">';
   trips.forEach(function(t){
+    migrateTv(t);
     var dL=Math.ceil((new Date(t.startDate+"T00:00:00")-today)/86400000);
+    var tAlerts=buildAlerts(t);
+    var tPend=(t.budget||[]).reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
+    var tPaid=(t.budget||[]).reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
+    var tSym=t.csym||"$";
     h+='<div class="tcard'+(dL<-1?" past":"")+'" onclick="openTrip(\''+t.id+'\')">';
-    h+='<div class="tc-dest">'+esc(t.destination)+'</div><div class="tc-name">'+esc(t.name)+'</div>';
+    h+='<div class="tc-dest">'+esc(t.destination)+'</div>';
+    h+='<div class="tc-name">'+esc(t.name)+'</div>';
     h+='<div class="tc-dates">'+fmt(t.startDate,{day:"numeric",month:"short"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"short",year:"numeric"})+'</div>';
-    h+='<div class="tc-foot"><span class="tc-chip">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</span>';
+    h+='<div class="bsplit" style="margin-top:4px"><span class="pend">Pend. '+tSym+nf(tPend)+'</span>&nbsp;&nbsp;<span class="paid">Pag. '+tSym+nf(tPaid)+'</span></div>';
+    if(tAlerts.length){tAlerts.slice(0,2).forEach(function(a){h+='<div class="tc-alert-row">&#9888; '+a.msg+'</div>';});if(tAlerts.length>2)h+='<div class="tc-alert-row">... +'+(tAlerts.length-2)+' más</div>';}
+    h+='<div class="tc-foot" style="margin-top:.625rem"><span class="tc-chip">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</span>';
     var lbl=dL>0?"En "+dL+" d&iacute;as":dL===0?"Hoy &#9992;":dL>=-3?"En curso":"Completado";
     h+='<span class="tc-cd">'+lbl+'</span></div></div>';
   });
@@ -486,42 +453,13 @@ function rSettings(){
   h+='<div><label class="fl">Fecha vuelta</label><input type="date" value="'+esc(b.endDate)+'" oninput="setBuf.endDate=this.value"></div>';
   h+='<div><label class="fl">Moneda principal</label><select onchange="setCS(this.value)">'+cO+'</select></div>';
   h+='<div><label class="fl">Moneda referencia</label><select onchange="setBuf.exBase=this.value">'+bO+'</select></div>';
-  h+='<div class="ff"><label class="fl">Tipo de cambio (1 '+esc(b.currency)+' = X '+esc(b.exBase)+')</label><div style="display:flex;gap:6px;align-items:center"><input type="number" step="0.001" value="'+b.exRate+'" oninput="setBuf.exRate=parseFloat(this.value)||1"><button class="btn sml" onclick="refreshRate()" style="flex-shrink:0;white-space:nowrap">'+(rateLoading?'<span class="spin"></span>':'&#8635;')+' Actualizar</button></div></div></div>';
-  h+='<label class="fl" style="margin:1rem 0 6px">Viajeros y documentos</label>';
-  setBuf.travelers.forEach(function(tv,i){
-    var open=(openTvIdx===i);
-    var name=getTravelerName(tv);
-    var hasAlert=false;
-    if(tv.passportExpiry){var d=daysUntil(tv.passportExpiry);if(d!==null&&d<=90)hasAlert=true;}
-    if(tv.estaExpiry){var d2=daysUntil(tv.estaExpiry);if(d2!==null&&d2<=90)hasAlert=true;}
-    h+='<div class="tv-card"><div class="tv-card-head" onclick="toggleTvCard('+i+')">';
-    h+='<span class="tv-card-name">'+(hasAlert?'&#9888; ':'')+esc(name||"Viajero "+(i+1))+'</span>';
-    h+='<span style="color:var(--mu);font-size:13px">'+(open?'&#8963;':'&#8964;')+'</span></div>';
-    if(open){
-      h+='<div class="tv-card-body"><div class="fg">';
-      h+='<div class="ff"><label class="fl">Nombre completo</label><input value="'+esc(tv.name||"")+'" oninput="setBuf.travelers['+i+'].name=this.value"></div>';
-      h+='<div><label class="fl">Fecha nacimiento</label><input type="date" value="'+esc(tv.birthdate||"")+'" oninput="setBuf.travelers['+i+'].birthdate=this.value"></div>';
-      h+='<div><label class="fl">Email</label><input type="email" value="'+esc(tv.email||"")+'" oninput="setBuf.travelers['+i+'].email=this.value"></div>';
-      h+='<div><label class="fl">Tel&eacute;fono m&oacute;vil</label><input type="tel" value="'+esc(tv.phone||"")+'" oninput="setBuf.travelers['+i+'].phone=this.value"></div>';
-      h+='<div><label class="fl">N&ordm; Pasaporte</label><input value="'+esc(tv.passport||"")+'" oninput="setBuf.travelers['+i+'].passport=this.value" placeholder="AAA123456"></div>';
-      h+='<div><label class="fl">DNI / NIE</label><input value="'+esc(tv.dni||"")+'" oninput="setBuf.travelers['+i+'].dni=this.value"></div>';
-      h+='<div><label class="fl">Pasaporte emisi&oacute;n</label><input type="date" value="'+esc(tv.passportIssue||"")+'" oninput="setBuf.travelers['+i+'].passportIssue=this.value"></div>';
-      h+='<div><label class="fl">Pasaporte caducidad</label><input type="date" value="'+esc(tv.passportExpiry||"")+'" oninput="setBuf.travelers['+i+'].passportExpiry=this.value"></div>';
-      h+='<div><label class="fl">N&ordm; ESTA</label><input value="'+esc(tv.esta||"")+'" oninput="setBuf.travelers['+i+'].esta=this.value"></div>';
-      h+='<div><label class="fl">ESTA caducidad</label><input type="date" value="'+esc(tv.estaExpiry||"")+'" oninput="setBuf.travelers['+i+'].estaExpiry=this.value"></div>';
-      h+='</div>';
-      h+='<button class="btn del" onclick="rmSetTv('+i+')" style="margin-top:4px">&#128465; Eliminar viajero</button>';
-      h+='</div>';
-    }
-    h+='</div>';
-  });
+  h+='<div class="ff"><label class="fl">Tipo de cambio (1 '+esc(b.currency)+' = X '+esc(b.exBase)+')</label><div style="display:flex;gap:6px"><input type="number" step="0.001" value="'+b.exRate+'" oninput="setBuf.exRate=parseFloat(this.value)||1"><button class="btn sml" onclick="refreshRate()" style="flex-shrink:0">&#8635; Live</button></div></div></div>';
+  h+='<label class="fl" style="margin:1rem 0 6px">Viajeros y documentos</label>'+tCards;
   h+='<button class="btn sml" style="margin-top:8px" onclick="addSetTv()">+ A&ntilde;adir viajero</button>';
   h+='<div class="mftr"><button class="btn del" onclick="delTrip()" style="color:var(--red)">&#128465; Eliminar viaje</button>';
   h+='<div style="display:flex;gap:8px"><button class="btn" onclick="closeSet()">Cancelar</button><button class="btn pri" onclick="saveSet()">Guardar</button></div></div></div></div>';
   return h;
 }
-function toggleTvCard(i){openTvIdx=(openTvIdx===i)?-1:i;render();}
-
 function setCS(code){var c=CURR.find(function(x){return x.c===code;});if(c){setBuf.currency=c.c;setBuf.csym=c.s;}render();}
 function addSetTv(){setBuf.travelers.push({name:"",passport:"",passportExpiry:"",passportIssue:"",dni:"",esta:"",estaExpiry:"",birthdate:"",email:"",phone:""});openTvIdx=setBuf.travelers.length-1;render();}
 function rmSetTv(i){setBuf.travelers.splice(i,1);render();}
@@ -665,9 +603,20 @@ function buForm(d,t,saveFn,cancelFn,isEdit){
   return h;
 }
 function rBudget(bycat,totAmt,totAlt,t){
-  var dSym=showAlt?(t.exBase||"EUR"):(t.csym||"$"),dRate=showAlt?1/(t.exRate||1):1;
+  var dSym=showAlt?(t.exBase||"EUR"):(t.csym||"$"),dRate=showAlt?(1/(t.exRate||1)):1;
+  var totPend=t.budget.reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
+  var totPaid=t.budget.reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
   var h='<div class="bsum">';
-  Object.keys(BCAT).forEach(function(cat){var items=bycat[cat],tot=items.reduce(function(s,b){return s+(+b.amt||0);},0);if(!items.length)return;var paidT=items.reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);var pendT=tot-paidT;h+='<div class="bcat" style="border-left-color:'+BCATC[cat]+'"><div><div class="bcat-n">'+BCAT[cat]+'</div><div class="bcat-c">'+items.length+' partida'+(items.length!==1?"s":"")+'</div></div><div><div class="bcat-u">'+esc(dSym)+nf(tot*dRate)+'</div>'+(pendT>0?'<div class="bcat-e" style="color:var(--amber)">Pend. '+esc(dSym)+nf(pendT*dRate)+'</div>':'<div class="bcat-e" style="color:var(--green)">Pagado</div>')+'</div></div>';});
+  Object.keys(BCAT).forEach(function(cat){
+    var items=bycat[cat],tot=items.reduce(function(s,b){return s+(+b.amt||0);},0);
+    var pend=items.reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
+    if(!items.length)return;
+    h+='<div class="bcat" style="border-left-color:'+BCATC[cat]+'">';
+    h+='<div><div class="bcat-n">'+BCAT[cat]+'</div><div class="bcat-c">'+items.length+' partida'+(items.length!==1?"s":"")+'</div></div>';
+    h+='<div><div class="bcat-u">'+esc(dSym)+nf(tot*dRate)+'</div>';
+    h+=(pend>0?'<div class="bcat-e" style="color:var(--amber)">Pend. '+esc(dSym)+nf(pend*dRate)+'</div>':'<div class="bcat-e" style="color:var(--green)">&#10003; Pagado</div>');
+    h+='</div></div>';
+  });
   h+='</div>';
   h+='<div class="sech"><span class="sech-t">Partidas</span><button class="btn sml'+(addBu?" pri":"")+'" onclick="togBu()">'+( addBu?"&#10005; Cancelar":"+ Partida")+'</button></div>';
   if(addBu){h+='<div class="fbox">'+buForm(nBu,t,"doAddBu()","togBu()",false)+'</div>';}
@@ -685,7 +634,7 @@ function rBudget(bycat,totAmt,totAlt,t){
       h+='</div>';
     });
   });
-  h+='<div class="btotal"><div><div style="font-size:14px;font-weight:500">Total viaje</div><div style="font-size:12px;color:var(--amber);margin-top:2px">Pendiente: '+esc(dSym)+nf(pendTot*dRate)+'</div><div style="font-size:12px;color:var(--green)">Pagado: '+esc(dSym)+nf(paidTot*dRate)+'</div></div><div style="text-align:right"><div style="font-size:24px;font-weight:600;font-family:\'DM Mono\',monospace">'+esc(dSym)+nf(showAlt?totAlt:totAmt,2)+'</div></div></div>';
+  h+='<div class="btotal"><div><div style="font-size:14px;font-weight:500">Total viaje</div><div class="bsplit" style="margin-top:4px"><span class="pend">Pendiente '+esc(dSym)+nf(totPend*dRate,2)+'</span><br><span class="paid">Pagado '+esc(dSym)+nf(totPaid*dRate,2)+'</span></div></div><div style="text-align:right"><div style="font-size:24px;font-weight:600;font-family:\'DM Mono\',monospace">'+esc(dSym)+nf((showAlt?totAlt:totAmt),2)+'</div></div></div>';
   return h;
 }
 
@@ -749,17 +698,19 @@ function doAddCk(){if(!nCk.text){toast("Escribe el elemento");return;}T().checkl
 function startECk(id){editCkId=id;editEvId=null;editBuId=null;eBuf=Object.assign({},T().checklist.find(function(c){return c.id===id;}));render();}
 function saveECk(id){var t=T();t.checklist=t.checklist.map(function(c){return c.id===id?Object.assign({},c,eBuf):c;});editCkId=null;save();render();toast("Guardado");}
 
-function openSet(){var t=T();if(!t)return;migrateTravelers(t);setBuf={name:t.name,destination:t.destination,startDate:t.startDate,endDate:t.endDate,currency:t.currency||"USD",csym:t.csym||"$",exBase:t.exBase||"EUR",exRate:t.exRate||1,travelers:JSON.parse(JSON.stringify(t.travelers))};openTvIdx=-1;showSet=true;render();}
+function openSet(){var t=T();if(!t)return;migrateTv(t);setBuf={name:t.name,destination:t.destination,startDate:t.startDate,endDate:t.endDate,currency:t.currency||"USD",csym:t.csym||"$",exBase:t.exBase||"EUR",exRate:t.exRate||1,travelers:JSON.parse(JSON.stringify(t.travelers))};openTvIdx=-1;showSet=true;render();}
+
 
 function togglePaid(id){var t=T();t.budget=t.budget.map(function(b){return b.id===id?Object.assign({},b,{paid:!b.paid}):b;});save();render();}
 function setShowAlt(v){showAlt=v;render();}
+function toggleTvCard(i){openTvIdx=(openTvIdx===i)?-1:i;render();}
 function refreshRate(){
   var t=T();if(!t)return;
-  rateLoading=true;
+  rateLoading=true;render();
   fetchRate(t.currency||"USD",t.exBase||"EUR",function(err,rate){
     rateLoading=false;
-    if(!err&&rate){t.exRate=Math.round(rate*10000)/10000;save();toast("Tipo de cambio actualizado: 1 "+(t.currency||"USD")+" = "+t.exRate+" "+(t.exBase||"EUR"));}
-    else{toast("No se pudo actualizar el tipo de cambio",3500);}
+    if(!err&&rate){setBuf.exRate=Math.round(rate*100000)/100000;toast("Actualizado: 1 "+(t.currency||"USD")+" = "+setBuf.exRate+" "+(t.exBase||"EUR"));}
+    else{toast("No se pudo obtener el tipo",3500);}
     render();
   });
 }
@@ -777,7 +728,7 @@ function wizBack(){wstep>1?wstep--:closeWiz();render();}
 var _g=[goHome,openTrip,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
-window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.refreshRate=refreshRate;window.toggleTvCard=toggleTvCard;
+window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
 window.nEv=nEv;window.nBu=nBu;window.nCk=nCk;window.eBuf=eBuf;window.wd=wd;window.setBuf=setBuf;
 
 // INIT: load from Sheets for cross-device sync, then render
