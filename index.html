@@ -638,7 +638,8 @@ function rBudget(bycat,totAmt,totAlt,t){
       if(isH&&b.cin&&b.cout)h+='<div class="bi-dates">'+fmt(b.cin,{day:"numeric",month:"short"})+'&rarr;'+fmt(b.cout,{day:"numeric",month:"short"})+(nts>0?'&nbsp;&middot;&nbsp;'+nts+' noche'+(nts!==1?"s":""):"")+'</div>';
       if(b.cancel)h+='<div class="bi-cancel">&#9888; Cancelar antes del '+fmt(b.cancel,{day:"numeric",month:"short",year:"numeric"})+'</div>';
       if(isUrl(b.url))h+='<a class="pill" href="'+esc(b.url)+'" target="_blank">&#128279; '+esc(host(b.url))+'</a>';
-      h+='</div><div class="bi-a"><div class="bi-u">'+esc(t.csym||"$")+nf(+b.amt,2)+'</div><div class="bi-e">'+esc(t.exBase||"EUR")+' '+nf((+b.amt)/(t.exRate||1))+'</div></div>';
+      h+='</div><div class="bi-a"><div class="bi-u">'+esc(dSym)+nf((+b.amt)*dRate,2)+'</div></div>';
+      h+='<span class="paid-chip '+(b.paid?'yes':'no')+'" data-bid="'+b.id+'" onclick="togglePaidEl(this)">'+(b.paid?'&#10003; Pagado':'Pendiente')+'</span>';
       h+='<button class="btn edt" onclick="startEBu(\''+b.id+'\')">&#9998;</button>';
       h+='<button class="btn del" onclick="delBu(\''+b.id+'\')">&#128465;</button></div>';
       if(isEd){h+='<div class="bi-edit">'+buForm(eBuf,t,"saveEBu('"+b.id+"')","cancelE()",true)+'</div>';}
@@ -714,6 +715,7 @@ function openSet(){var t=T();if(!t)return;migrateTv(t);setBuf={name:t.name,desti
 
 
 function togglePaid(id){var t=T();t.budget=t.budget.map(function(b){return b.id===id?Object.assign({},b,{paid:!b.paid}):b;});save();render();}
+function togglePaidEl(el){var id=el.getAttribute("data-bid");if(id)togglePaid(id);}
 function setShowAlt(v){showAlt=v;render();}
 function toggleTvCard(i){openTvIdx=(openTvIdx===i)?-1:i;render();}
 function refreshRate(){
@@ -737,7 +739,7 @@ function wizNext(){
 }
 function wizBack(){wstep>1?wstep--:closeWiz();render();}
 
-var _g=[goHome,openTrip,openTripEl,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
+var _g=[goHome,openTrip,openTripEl,togglePaidEl,setTab,pickDay,togEv,togBu,togCk,cancelE,doAddEv,delEv,startEEv,saveEEv,doAddBu,delBu,startEBu,saveEBu,togCkItem,delCk,doAddCk,startECk,saveECk,openSet,closeSet,saveSet,delTrip,setCS,addSetTv,rmSetTv,openWiz,closeWiz,wizNext,wizBack,wizCS,addWT,rmWT,viewBudgetItem];
 _g.forEach(function(f){window[f.name]=f;});
 window.manualSync=manualSync;
 window.togglePaid=togglePaid;window.setShowAlt=setShowAlt;window.toggleTvCard=toggleTvCard;window.refreshRate=refreshRate;
@@ -755,8 +757,9 @@ if(trips.length===0){
 trips=trips.filter(function(t){return t.name&&t.startDate;});
 if(trips.length===0){trips=[JSON.parse(JSON.stringify(DEMO))];localStorage.setItem("tp7_trips",JSON.stringify(trips));actId=null;}
 if(actId&&!trips.find(function(t){return t.id===actId;}))actId=null;
-// Render immediately with local data — don't block on network
-if(actId)render();else rHome();
+// Always start at home screen so user picks the trip
+actId=null;
+rHome();
 // Then sync in background
 if(SCRIPT_URL){
   syncSt="pending";
