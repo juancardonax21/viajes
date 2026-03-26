@@ -463,7 +463,7 @@ h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNE
   h+='<div class="sc"><div class="sc-lbl">Por persona</div><div class="sc-n">'+esc(t.csym||"$")+nf(totAmt/Math.max(1,t.travelers.length))+'</div><div class="sc-s">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="sc"><div class="sc-lbl">Checklist</div><div class="sc-n">'+ckDone+'/'+t.checklist.length+'</div><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div></div></div>';
   h+='<div class="tabs">';
-  [["itinerary","Itinerario"],["budget","Presupuesto"],["checklist","Checklist"]].forEach(function(x){h+='<button class="tab'+(tab===x[0]?" on":"")+'" onclick="setTab(\''+x[0]+'\')">'+x[1]+'</button>';});
+  [["itinerary","Itinerario"],["budget","Presupuesto"],["checklist","Checklist"],["docs","Documentos"]].forEach(function(x){h+='<button class="tab'+(tab===x[0]?" on":"")+'" onclick="setTab(\''+x[0]+'\')">'+x[1]+'</button>';});
   h+='</div>';
   if(tab==="itinerary")h+=rItinerary(dd,devs,t);
   if(tab==="docs")h+=rDocs(t);
