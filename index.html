@@ -404,6 +404,11 @@ h+='<div class="nav"><span class="logo" onclick="goHome()">&#9992; TRAVEL PLANNE
   h+='<div class="hdr"><div class="hdr-top"><div><div class="dest-lbl">'+esc(t.destination)+'</div><div class="trip-name">'+esc(t.name)+'</div><div class="trip-meta">'+fmt(t.startDate,{day:"numeric",month:"long"})+'&mdash;'+fmt(t.endDate,{day:"numeric",month:"long",year:"numeric"})+'&nbsp;&middot;&nbsp;'+dd.length+' d&iacute;as&nbsp;&middot;&nbsp;'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="cdown"><div class="cdown-n">'+(dL>0?dL:dL===0?"HOY":"&#9992;")+'</div><div class="cdown-l">'+(dL>0?"d&iacute;as":dL===0?"Hoy":"En curso")+'</div></div></div>';
   h+='<div class="travelers">';t.travelers.forEach(function(v){h+='<span class="chip">'+esc(getTvName(v))+'</span>';});h+='</div></div>';
+  var tPendNow=t.budget.reduce(function(s,b){return s+(!b.paid?(+b.amt||0):0);},0);
+  var tPaidNow=t.budget.reduce(function(s,b){return s+(b.paid?(+b.amt||0):0);},0);
+  var tAlsNow=buildAlerts(t);
+  if(tAlsNow.length){h+='<div style="margin-bottom:1rem">';tAlsNow.forEach(function(a){h+='<div class="alert-row al-'+a.lvl+'">&#9888; '+a.msg+'</div>';});h+='</div>';}
+  h+='<div class="sgrid">';
   h+='<div class="sc"><div class="sc-lbl">Presupuesto total</div><div class="sc-n">'+esc(dSym)+nf(showAlt?totAlt:totAmt)+'</div><div class="sc-s bsplit"><span class="pend">Pend. '+esc(dSym)+nf(tPendNow*dRate)+'</span> <span class="paid">Pag. '+esc(dSym)+nf(tPaidNow*dRate)+'</span></div></div>';
   h+='<div class="sc"><div class="sc-lbl">Por persona</div><div class="sc-n">'+esc(t.csym||"$")+nf(totAmt/Math.max(1,t.travelers.length))+'</div><div class="sc-s">'+t.travelers.length+' viajero'+(t.travelers.length!==1?"s":"")+'</div></div>';
   h+='<div class="sc"><div class="sc-lbl">Checklist</div><div class="sc-n">'+ckDone+'/'+t.checklist.length+'</div><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div></div></div>';
